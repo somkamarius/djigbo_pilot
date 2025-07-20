@@ -1,0 +1,322 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+
+:root {
+  --primary: rgb(223, 207, 185); /* warm sand/brown */
+  --primary-dark: #a68a64; /* deeper warm brown */
+  --accent: rgb(242, 241, 239); /* soft neutral background */
+  --circle-bg: rgba(223, 207, 185, 0.85);
+  --circle-border: #bfae99;
+  --circle-shadow: 0 8px 32px 0 rgba(166, 138, 100, 0.10);
+  --central-bg: linear-gradient(135deg, rgb(242, 241, 239) 60%, rgb(223, 207, 185) 100%);
+  --central-border: #bfae99;
+  --text: #5C4A2D;
+  --text-light: #a68a64;
+  --glass-bg: rgba(223, 207, 185, 0.65);
+  --glass-blur: blur(12px);
+  --gradient-main: linear-gradient(120deg, rgb(242, 241, 239) 0%, rgb(223, 207, 185) 100%);
+  --gradient-hover: linear-gradient(120deg, rgb(223, 207, 185) 0%, #a68a64 100%);
+}
+
+@font-face {
+  font-family: 'Palemonas';
+  src: url('/fonts/Palem-nm.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Palemonas';
+  src: url('/fonts/Palem-bd.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Palemonas';
+  src: url('/fonts/Palem-it.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Palemonas';
+  src: url('/fonts/Palem-bi.ttf') format('truetype');
+  font-weight: bold;
+  font-style: italic;
+}
+
+body {
+  background: var(--accent);
+  font-family: 'Palemonas', 'Times New Roman', Times, serif;
+  color: var(--text);
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+}
+
+.App {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+}
+
+.circle-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  margin-bottom: 0;
+  margin-top: 40px;
+  z-index: 2;
+  width: 100%;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.circle-link {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: var(--glass-bg);
+  border: none;
+  box-shadow: var(--circle-shadow), 0 1.5px 8px 0 rgba(255, 224, 102, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  transition: 
+    box-shadow 0.35s cubic-bezier(0.4,0,0.2,1),
+    background 0.35s cubic-bezier(0.4,0,0.2,1),
+    color 0.35s cubic-bezier(0.4,0,0.2,1),
+    border 0.35s cubic-bezier(0.4,0,0.2,1),
+    transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  will-change: transform, box-shadow, background, color;
+  cursor: pointer;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  background-image: var(--gradient-main);
+  box-shadow: 0 4px 24px 0 rgba(255, 224, 102, 0.13), 0 1.5px 8px 0 rgba(255, 224, 102, 0.08);
+  text-align: center;
+}
+.circle-link:hover, .circle-link.active {
+  background-image: var(--gradient-hover);
+  color: #fff;
+  box-shadow:
+    0 0 0 0px rgba(255, 224, 102, 0.10),
+    0 0 16px 4px rgba(223, 207, 185, 0.35),
+    0 0 32px 8px rgba(166, 138, 100, 0.25),
+    0 12px 36px 0 rgba(255, 184, 76, 0.18),
+    0 1.5px 8px 0 rgba(255, 224, 102, 0.10);
+  border: none;
+  transform: scale(1.09) rotate(-2deg);
+}
+
+.central-circle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: var(--central-bg);
+  box-shadow: 0 8px 32px 0 rgba(255, 224, 102, 0.13), 0 1.5px 8px 0 rgba(255, 224, 102, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin: 0 auto 2.5rem auto;
+  border: 2.5px solid var(--central-border);
+  transition: box-shadow 0.35s, background 0.35s, color 0.35s;
+  will-change: box-shadow, background, color;
+  text-align: center;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  background-image: var(--gradient-main);
+  letter-spacing: 0.01em;
+}
+
+h1, h2, h3, h4, h5, h6, .chat-title {
+  font-family: 'Palemonas', 'Times New Roman', Times, serif;
+  font-weight: normal;
+}
+
+h2 {
+  font-size: 2.1rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary-dark);
+  text-align: center;
+}
+
+p {
+  color: var(--text-light);
+  text-align: center;
+  font-size: 1.08rem;
+}
+
+/* Chat styles */
+.chat-container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 32px auto;
+  background: var(--accent);
+  box-shadow: 0 8px 32px 0 rgba(166, 138, 100, 0.10);
+  border-radius: 0;
+  padding: 2.5rem 3vw 2rem 3vw;
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.chat-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  text-align: left;
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.02em;
+  font-family: 'Inter', 'Palemonas', 'Menlo', 'Monaco', 'Consolas', monospace;
+}
+
+.chat-window {
+  flex: 1 1 auto;
+  min-height: 300px;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.2rem;
+  padding: 1.2rem 0.5rem;
+  background: var(--glass-bg);
+  border-radius: 0;
+  border: 1.5px solid var(--circle-border);
+  box-shadow: 0 2px 12px 0 rgba(223, 207, 185, 0.10);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.chat-bubble {
+  max-width: 90%;
+  padding: 0.7em 1.1em;
+  border-radius: 0;
+  font-size: 1.08rem;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-weight: 400;
+  line-height: 1.6;
+  word-break: break-word;
+  margin-bottom: 0.2em;
+  background: rgba(245, 242, 236, 0.85);
+  color: var(--text);
+  box-shadow: 0 1px 4px 0 rgba(223, 207, 185, 0.08);
+  border: 1px solid var(--circle-border);
+  transition: background 0.3s, color 0.3s;
+}
+
+.chat-bubble.user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 0;
+  font-weight: 600;
+  border: 1px solid var(--primary-dark);
+}
+
+.chat-bubble.assistant {
+  align-self: flex-start;
+  background: var(--glass-bg);
+  color: var(--text);
+  border-bottom-left-radius: 0;
+  border: 1px solid var(--circle-border);
+  font-weight: 500;
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.chat-input {
+  flex: 1 1 auto;
+  font-size: 1.08rem;
+  padding: 0.7em 1em;
+  border-radius: 0;
+  border: 1.5px solid var(--circle-border);
+  background: var(--glass-bg);
+  color: var(--text);
+  outline: none;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1.5px 8px 0 rgba(223, 207, 185, 0.04);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.chat-input:focus {
+  border-color: var(--primary-dark);
+  background: #fff;
+  box-shadow: 0 2px 12px 0 rgba(223, 207, 185, 0.10);
+}
+
+.chat-send-btn {
+  background: var(--primary-dark);
+  color: #fff;
+  border-radius: 0;
+  border: none;
+  font-size: 1.08rem;
+  font-weight: 700;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  box-shadow: 0 1.5px 8px 0 rgba(166, 138, 100, 0.08);
+  transition: background 0.2s, transform 0.2s, color 0.2s, box-shadow 0.2s;
+  padding: 0.7em 1.2em;
+}
+
+.chat-send-btn:hover {
+  background: var(--primary);
+  color: var(--text);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 16px 0 rgba(166, 138, 100, 0.13);
+}
+
+@media (max-width: 900px) {
+  .chat-container {
+    max-width: 98vw;
+    padding: 1.2rem 2vw 1rem 2vw;
+    min-height: 60vh;
+    margin-top: 12px;
+    margin-bottom: 12px;
+  }
+  .chat-window {
+    min-height: 180px;
+    max-height: 40vh;
+    padding: 0.7rem 0.2rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .circle-nav {
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 98vw;
+  }
+}
+
+h1, h2, h3, h4, h5, h6, .central-circle, .chat-title, p, .circle-link, .chat-bubble, .chat-input, .chat-send-btn {
+  font-family: 'Palemonas', 'Times New Roman', Times, serif;
+}
