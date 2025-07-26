@@ -1,6 +1,8 @@
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import IndividualConnection from './IndividualConnection'
 import './App.css'
+import { useAuth0 } from '@auth0/auth0-react';
+import { Maintenance } from './maintenance/Maintenance';
 
 function Storyteller() {
   return <div><h2>Storyteller</h2><p>Educational content in a narrative style.</p></div>;
@@ -13,6 +15,21 @@ function Democracy() {
 
 function App() {
   const location = useLocation();
+  const { isAuthenticated, isLoading, error } = useAuth0();
+
+  if (isLoading) {
+    return <div>Loading ...</div>;
+  }
+  if (error) {
+    return <div>Oops... {error.message}</div>;
+  }
+
+  console.log(isAuthenticated);
+
+  if (!isAuthenticated) {
+    return <Maintenance />;
+  }
+
   return (
     <div className="App">
       <div className="circle-nav" style={{ marginBottom: 0, marginTop: 32 }}>

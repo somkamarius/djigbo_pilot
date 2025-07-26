@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# macOS system files
+../.DS_Store
+
+# Deprecated project directory
+../deprecated_djigbo_app/ 

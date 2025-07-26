@@ -1,13 +1,23 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { Auth0Provider } from '@auth0/auth0-react';
 import './index.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <Auth0Provider
+      domain="dev-y90go66m.us.auth0.com"
+      clientId="V7vtBCzYDBCYchw6lhEZardIfv6B9dhU"
+      authorizationParams={{
+        redirect_uri: window.location.origin,
+        audience: "https://dev-y90go66m.us.auth0.com/api/v2/"
+      }}
+    >
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </Auth0Provider>
   </StrictMode>,
 )
