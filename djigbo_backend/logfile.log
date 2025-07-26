@@ -1,0 +1,7 @@
+{"level":"error","message":"Error saving conversation summary:"}
+{"level":"error","message":"Error saving conversation summary:"}
+{"code":"SQLITE_READONLY","errno":8,"level":"error","message":"Error saving conversation summary: SQLITE_READONLY: attempt to write a readonly database","stack":"Error: SQLITE_READONLY: attempt to write a readonly database"}
+{"level":"error","message":"Error saving conversation summary:"}
+{"code":"SQLITE_READONLY","errno":8,"level":"error","message":"Error saving conversation summary: SQLITE_READONLY: attempt to write a readonly database","stack":"Error: SQLITE_READONLY: attempt to write a readonly database"}
+{"level":"error","message":"Error saving conversation summary:"}
+{"code":"SQLITE_READONLY","errno":8,"level":"error","message":"Error saving conversation summary: SQLITE_READONLY: attempt to write a readonly database","stack":"Error: SQLITE_READONLY: attempt to write a readonly database"}

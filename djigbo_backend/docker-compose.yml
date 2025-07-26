@@ -1,0 +1,42 @@
+version: '3.7'
+services:
+  elasticsearch:
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:8.10.2'
+    container_name: elasticsearch-logging
+    volumes:
+      - 'data_es:/usr/share/elasticsearch/data'
+    environment:
+      - discovery.type=single-node
+      - CLI_JAVA_OPTS=-Xms2g -Xmx2g
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ports:
+      - '9300:9200'
+    networks:
+      - elasticsearch-kibana-node-js-logging
+  kibana:
+    image: 'docker.elastic.co/kibana/kibana:8.10.2'
+    container_name: kibana-logging
+    environment:
+      - 'ELASTICSEARCH_HOSTS=http://elasticsearch:9200'
+      - 'XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=d1a66dfd-c4d3-4a0a-8290-2abcb83ab3aa'
+    ports:
+      - '5701:5601'
+    networks:
+      - elasticsearch-kibana-node-js-logging
+  app:
+    build: .
+    container_name: app-logging
+    restart: unless-stopped
+    ports:
+      - '3002:8000'
+    stdin_open: true
+    tty: true
+    networks:
+      - elasticsearch-kibana-node-js-logging
+volumes:
+  data_es:
+    driver: local
+networks:
+  elasticsearch-kibana-node-js-logging: null

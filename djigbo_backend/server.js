@@ -3,23 +3,74 @@ const express = require('express');
 const cors = require('cors');
 const { bedrockChatHandler } = require('./bedrockChatHandler');
 const { ollamaChatHandler } = require('./ollamaChatHandler');
-const esClient = require('./esClient'); // Add this line to import esClient
+const { checkJwt, auth0ErrorHandler, extractUserInfo, debugToken } = require('./auth0Middleware');
+const {
+  getUserConversationSummaries,
+  getConversationSummary,
+  deleteConversationSummary,
+  getUserConversationCount,
+  getConversationStats,
+  generateConversationSummaryV2
+} = require('./database');
+
+// At the top of server.js
+const logger = require('./logger');
+
+// Async error wrapper function
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  // Elasticsearch health check
-  esClient.info()
-    .then(info => {
-      console.log('Elasticsearch connected:', info.version.number);
-    })
-    .catch(err => {
-      console.error('Elasticsearch connection error:', err);
-    });
+// Auth0 error handler middleware (must be before other error handlers)
+app.use(auth0ErrorHandler);
+
+// Error boundary middleware for synchronous errors
+app.use((err, req, res, next) => {
+  logger.error('Unhandled synchronous error:', {
+    error: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    timestamp: new Date().toISOString()
+  });
+
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
+  });
+});
+
+// Global error handler for unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Promise Rejection:', {
+    reason: reason,
+    promise: promise,
+    stack: reason instanceof Error ? reason.stack : undefined,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Global error handler for uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', {
+    error: error.message,
+    stack: error.stack,
+    timestamp: new Date().toISOString()
+  });
+
+  // Gracefully shutdown the server
+  process.exit(1);
+});
+
+const PORT = process.env.PORT || 8000;
+const server = app.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT}`);
 });
 
 // USAGE:
@@ -35,8 +86,236 @@ app.listen(PORT, () => {
 // To set a system prompt, include a message with role "system" as the first message.
 //
 // The response will be the assistant's reply from the LLM.
-app.post('/api/chat', bedrockChatHandler);
+// Protected routes - require authentication
+app.post('/api/chat', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    await bedrockChatHandler(req, res);
+  } catch (error) {
+    logger.error('Error in /api/chat endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      body: req.body,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error; // Re-throw to be caught by error middleware
+  }
+}));
+
+app.get('/status', asyncHandler(async (req, res) => {
+  try {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      auth: {
+        enabled: true,
+        provider: 'Auth0'
+      }
+    });
+  } catch (error) {
+    logger.error('Error in /status endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get user profile (requires authentication)
+app.get('/api/profile', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    res.json({
+      user: req.user,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in /api/profile endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
 
 // Add a new endpoint for Ollama
-app.post('/api/ollama-chat', ollamaChatHandler); 
+app.post('/api/ollama-chat', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    await ollamaChatHandler(req, res);
+  } catch (error) {
+    logger.error('Error in /api/ollama-chat endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      body: req.body,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get all conversation summaries for the authenticated user
+app.get('/api/conversations', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const summaries = await getUserConversationSummaries(userId);
+    res.json({
+      conversations: summaries,
+      count: summaries.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in /api/conversations endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get a specific conversation summary
+app.get('/api/conversations/:conversationId', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const { conversationId } = req.params;
+    const summary = await getConversationSummary(userId, conversationId);
+
+    if (!summary) {
+      return res.status(404).json({
+        error: 'Conversation not found',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json({
+      conversation: summary,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in /api/conversations/:conversationId endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      conversationId: req.params.conversationId,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Delete a conversation summary
+app.delete('/api/conversations/:conversationId', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const { conversationId } = req.params;
+    const deletedCount = await deleteConversationSummary(userId, conversationId);
+
+    if (deletedCount === 0) {
+      return res.status(404).json({
+        error: 'Conversation not found',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json({
+      message: 'Conversation deleted successfully',
+      deletedCount,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in DELETE /api/conversations/:conversationId endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      conversationId: req.params.conversationId,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get user conversation count
+app.get('/api/conversations/count', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const count = await getUserConversationCount(userId);
+    res.json({
+      count,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in /api/conversations/count endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get conversation statistics (admin endpoint - could add admin check later)
+app.get('/api/conversations/stats', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const stats = await getConversationStats();
+    res.json({
+      stats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in /api/conversations/stats endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Test summary generation endpoint
+app.post('/api/test-summary', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const { messages, assistant_response, provider = 'simple' } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({
+        error: 'messages array is required',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (!assistant_response) {
+      return res.status(400).json({
+        error: 'assistant_response is required',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const summary = await generateConversationSummaryV2(messages, assistant_response, provider);
+
+    res.json({
+      summary,
+      provider,
+      message_count: messages.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in /api/test-summary endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      body: req.body,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+logger.info('Server started');
 
