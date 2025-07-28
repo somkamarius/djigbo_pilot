@@ -3,14 +3,21 @@ const express = require('express');
 const cors = require('cors');
 const { bedrockChatHandler } = require('./bedrockChatHandler');
 const { ollamaChatHandler } = require('./ollamaChatHandler');
+const { togetherChatHandler } = require('./togetherChatHandler');
 const { checkJwt, auth0ErrorHandler, extractUserInfo, debugToken } = require('./auth0Middleware');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const {
   getUserConversationSummaries,
   getConversationSummary,
   deleteConversationSummary,
   getUserConversationCount,
   getConversationStats,
-  generateConversationSummaryV2
+  generateConversationSummaryV2,
+  generateConversationId,
+  saveFeedback,
+  getUserFeedback,
+  getAllFeedback,
+  getFeedbackStats
 } = require('./database');
 
 // At the top of server.js
@@ -72,6 +79,32 @@ const PORT = process.env.PORT || 8000;
 const server = app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
 });
+
+// Health check endpoint for DigitalOcean App Platform
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// Kibana proxy endpoint
+app.use('/kibana', createProxyMiddleware({
+  target: 'http://kibana:5601',
+  changeOrigin: true,
+  pathRewrite: {
+    '^/kibana': ''
+  },
+  onError: (err, req, res) => {
+    logger.error('Kibana proxy error:', {
+      error: err.message,
+      url: req.url,
+      timestamp: new Date().toISOString()
+    });
+    res.status(503).json({
+      error: 'Kibana service unavailable',
+      message: 'Kibana is not running or not accessible',
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
 
 // USAGE:
 // POST /api/chat
@@ -146,6 +179,44 @@ app.post('/api/ollama-chat', debugToken, checkJwt, extractUserInfo, asyncHandler
     await ollamaChatHandler(req, res);
   } catch (error) {
     logger.error('Error in /api/ollama-chat endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      body: req.body,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Add a new endpoint for Together.ai
+app.post('/api/together-chat', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    await togetherChatHandler(req, res);
+  } catch (error) {
+    logger.error('Error in /api/together-chat endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      body: req.body,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Mock chat endpoint that returns a fixed response
+app.post('/api/chat-mock', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const { conversation_id } = req.body;
+    const convId = conversation_id || generateConversationId();
+
+    res.json({
+      content: "This is a mock response from the chat-mock endpoint. Hello from the mock server!",
+      conversation_id: convId
+    });
+  } catch (error) {
+    logger.error('Error in /api/chat-mock endpoint:', {
       error: error.message,
       stack: error.stack,
       body: req.body,
@@ -311,6 +382,101 @@ app.post('/api/test-summary', debugToken, checkJwt, extractUserInfo, asyncHandle
       stack: error.stack,
       userId: req.user?.sub,
       body: req.body,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Submit feedback endpoint
+app.post('/api/feedback', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const { feedbackText } = req.body;
+
+    if (!feedbackText || typeof feedbackText !== 'string' || feedbackText.trim() === '') {
+      return res.status(400).json({
+        error: 'feedbackText is required and must be a non-empty string',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const userId = req.user.sub;
+    const feedbackId = await saveFeedback(userId, feedbackText.trim());
+
+    res.json({
+      message: 'Feedback submitted successfully',
+      feedbackId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in /api/feedback endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      body: req.body,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get user's feedback endpoint
+app.get('/api/feedback', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const feedback = await getUserFeedback(userId);
+
+    res.json({
+      feedback,
+      count: feedback.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/feedback endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get all feedback (admin endpoint)
+app.get('/api/feedback/all', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const feedback = await getAllFeedback();
+
+    res.json({
+      feedback,
+      count: feedback.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/feedback/all endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get feedback statistics endpoint
+app.get('/api/feedback/stats', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const stats = await getFeedbackStats();
+
+    res.json({
+      stats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/feedback/stats endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
       timestamp: new Date().toISOString()
     });
     throw error;

@@ -21,7 +21,7 @@ initializeDatabase();
 
 // Initialize database tables
 function initializeDatabase() {
-    const createTableSQL = `
+    const createConversationTableSQL = `
     CREATE TABLE IF NOT EXISTS conversation_summaries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL,
@@ -34,14 +34,34 @@ function initializeDatabase() {
     )
   `;
 
+    const createFeedbackTableSQL = `
+    CREATE TABLE IF NOT EXISTS feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      feedback_text TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
     return new Promise((resolve, reject) => {
-        db.run(createTableSQL, (err) => {
+        // Create conversation summaries table
+        db.run(createConversationTableSQL, (err) => {
             if (err) {
-                logger.error('Error creating table:', err.message);
+                logger.error('Error creating conversation summaries table:', err.message);
                 reject(err);
             } else {
                 logger.info('Conversation summaries table ready');
-                resolve();
+
+                // Create feedback table
+                db.run(createFeedbackTableSQL, (err) => {
+                    if (err) {
+                        logger.error('Error creating feedback table:', err.message);
+                        reject(err);
+                    } else {
+                        logger.info('Feedback table ready');
+                        resolve();
+                    }
+                });
             }
         });
     });
@@ -224,11 +244,11 @@ async function generateConversationSummaryV2(messages, assistantResponse, provid
         const fullConversation = `${conversationText}\nassistant: ${assistantResponse}`;
 
         // Create a summary prompt
-        const summaryPrompt = `Please provide a concise summary of the following conversation in 1-2 sentences. Focus on the main topic and key points discussed:
+        const summaryPrompt = `Please analyze the user's personality based on the Big Five personality traits (Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism) from this conversation. Provide a concise summary in 1-2 sentences focusing on the user's personality characteristics, communication style, and behavioral patterns:
 
 ${fullConversation}
 
-Summary:`;
+Personality Summary:`;
 
         let summary = '';
 
@@ -330,6 +350,88 @@ function generateSimpleSummary(messages, assistantResponse) {
     return 'Conversation started';
 }
 
+// Save feedback
+function saveFeedback(userId, feedbackText) {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      INSERT INTO feedback (user_id, feedback_text) 
+      VALUES (?, ?)
+    `;
+
+        db.run(sql, [userId, feedbackText], function (err) {
+            if (err) {
+                logger.error('Error saving feedback:', err.message);
+                reject(err);
+            } else {
+                logger.info(`Saved feedback for user ${userId}`);
+                resolve(this.lastID);
+            }
+        });
+    });
+}
+
+// Get all feedback for a user
+function getUserFeedback(userId) {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      SELECT * FROM feedback 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC
+    `;
+
+        db.all(sql, [userId], (err, rows) => {
+            if (err) {
+                logger.error('Error getting user feedback:', err.message);
+                reject(err);
+            } else {
+                resolve(rows);
+            }
+        });
+    });
+}
+
+// Get all feedback (admin function)
+function getAllFeedback() {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      SELECT * FROM feedback 
+      ORDER BY created_at DESC
+    `;
+
+        db.all(sql, (err, rows) => {
+            if (err) {
+                logger.error('Error getting all feedback:', err.message);
+                reject(err);
+            } else {
+                resolve(rows);
+            }
+        });
+    });
+}
+
+// Get feedback statistics
+function getFeedbackStats() {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      SELECT 
+        COUNT(*) as total_feedback,
+        COUNT(DISTINCT user_id) as unique_users,
+        MAX(created_at) as latest_feedback,
+        MIN(created_at) as earliest_feedback
+      FROM feedback
+    `;
+
+        db.get(sql, (err, row) => {
+            if (err) {
+                logger.error('Error getting feedback stats:', err.message);
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
 // Close database connection
 function closeDatabase() {
     db.close((err) => {
@@ -357,5 +459,9 @@ module.exports = {
     generateSummaryWithBedrock,
     generateSummaryWithOllama,
     generateSimpleSummary,
+    saveFeedback,
+    getUserFeedback,
+    getAllFeedback,
+    getFeedbackStats,
     closeDatabase
 }; 

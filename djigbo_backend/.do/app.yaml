@@ -1,0 +1,63 @@
+name: djigbo-backend
+services:
+  - name: app
+    source_dir: /
+    github:
+      repo: your-username/your-repo
+      branch: main
+    run_command: npm start
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 8000
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "8000"
+
+  - name: elasticsearch
+    source_dir: /
+    github:
+      repo: your-username/your-repo
+      branch: main
+    dockerfile_path: Dockerfile.elasticsearch
+    run_command: /usr/local/bin/docker-entrypoint.sh
+    environment_slug: docker
+    instance_count: 1
+    instance_size_slug: basic-xs
+    http_port: 9200
+    routes:
+      - path: /elasticsearch
+    envs:
+      - key: discovery.type
+        value: single-node
+      - key: xpack.security.enabled
+        value: "false"
+
+  - name: kibana
+    source_dir: /
+    github:
+      repo: your-username/your-repo
+      branch: main
+    dockerfile_path: Dockerfile.kibana
+    run_command: /usr/local/bin/kibana-docker
+    environment_slug: docker
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 5601
+    routes:
+      - path: /kibana
+    envs:
+      - key: ELASTICSEARCH_HOSTS
+        value: http://elasticsearch:9200
+      - key: XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY
+        value: d1a66dfd-c4d3-4a0a-8290-2abcb83ab3aa
+
+databases:
+  - name: elasticsearch-data
+    engine: REDIS
+    version: "6"
+    size: db-s-1vcpu-1gb 
