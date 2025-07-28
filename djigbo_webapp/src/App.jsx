@@ -3,6 +3,7 @@ import IndividualConnection from './IndividualConnection'
 import './App.css'
 import { useAuth0 } from '@auth0/auth0-react';
 import { Maintenance } from './maintenance/Maintenance';
+import { Loading } from './maintenance/Loading';
 import FeedbackWidget from './FeedbackWidget';
 
 function Storyteller() {
@@ -19,8 +20,9 @@ function App() {
   const { isAuthenticated, isLoading, error } = useAuth0();
 
   if (isLoading) {
-    return <div>Loading ...</div>;
+    return <Loading />;
   }
+
   if (error) {
     return <div>Oops... {error.message}</div>;
   }

@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import './App.css';
 
 // const API_URL = "http://localhost:4000/api/chat";
-const API_URL = "http://localhost:8000/api/ollama-chat";
+const API_URL = "http://localhost:8000/api/chat-mock";
 
 const MODEL_OPTIONS = [
   { label: 'Llama 3 8B', value: 'meta.llama3-8b-instruct' },
