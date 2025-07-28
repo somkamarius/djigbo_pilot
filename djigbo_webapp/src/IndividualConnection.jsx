@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import ReactMarkdown from 'react-markdown';
 import './App.css';
 
 // const API_URL = "http://localhost:4000/api/chat";
@@ -232,7 +233,11 @@ export default function IndividualConnection() {
               .map((msg, i) => (
                 <div key={i} className={`journal-entry ${msg.role}`}>
                   <div className="entry-content">
-                    {msg.content}
+                    {msg.role === 'assistant' ? (
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                 </div>
               ))

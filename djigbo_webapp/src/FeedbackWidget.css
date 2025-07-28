@@ -1,0 +1,319 @@
+/* Feedback Badge */
+.feedback-badge {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--gradient-main);
+    border: 2px solid var(--circle-border);
+    box-shadow: var(--circle-shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    color: var(--text);
+    font-size: 0;
+    padding: 0;
+}
+
+.feedback-badge:hover {
+    background: var(--gradient-hover);
+    transform: scale(1.05);
+    box-shadow: 0 12px 40px 0 rgba(166, 138, 100, 0.20);
+}
+
+.feedback-badge:active {
+    transform: scale(0.95);
+}
+
+/* Modal Overlay */
+.feedback-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    padding: 20px;
+}
+
+/* Modal */
+.feedback-modal {
+    background: var(--journal-bg);
+    border-radius: 16px;
+    box-shadow: var(--journal-shadow-deep);
+    border: 1px solid var(--journal-border);
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal Header */
+.feedback-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid var(--journal-border);
+}
+
+.feedback-modal-header h3 {
+    margin: 0;
+    font-family: 'Palemonas', 'Times New Roman', Times, serif;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--journal-text);
+}
+
+.feedback-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    color: var(--journal-text-light);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.feedback-modal-close:hover {
+    background: var(--journal-border);
+    color: var(--journal-text);
+}
+
+.feedback-modal-close:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Form */
+.feedback-form {
+    padding: 24px;
+}
+
+.feedback-input-group {
+    margin-bottom: 24px;
+}
+
+.feedback-label {
+    display: block;
+    margin-bottom: 8px;
+    font-family: 'Palemonas', 'Times New Roman', Times, serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--journal-text);
+}
+
+.feedback-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 16px;
+    border: 2px solid var(--journal-border);
+    border-radius: 12px;
+    background: var(--journal-paper);
+    font-family: 'Palemonas', 'Times New Roman', Times, serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--journal-text);
+    resize: vertical;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.feedback-textarea:focus {
+    outline: none;
+    border-color: var(--journal-accent);
+    box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.1);
+}
+
+.feedback-textarea:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.feedback-textarea::placeholder {
+    color: var(--journal-text-light);
+    font-style: italic;
+}
+
+/* Status Messages */
+.feedback-success {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    color: #155724;
+    font-family: 'Palemonas', 'Times New Roman', Times, serif;
+    font-size: 0.9rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.feedback-error {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    color: #721c24;
+    font-family: 'Palemonas', 'Times New Roman', Times, serif;
+    font-size: 0.9rem;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Action Buttons */
+.feedback-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.feedback-cancel-btn {
+    padding: 12px 24px;
+    border: 2px solid var(--journal-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--journal-text);
+    font-family: 'Palemonas', 'Times New Roman', Times, serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.feedback-cancel-btn:hover:not(:disabled) {
+    background: var(--journal-border);
+    border-color: var(--journal-text-light);
+}
+
+.feedback-cancel-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.feedback-submit-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    background: var(--gradient-main);
+    color: var(--text);
+    font-family: 'Palemonas', 'Times New Roman', Times, serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--journal-shadow);
+}
+
+.feedback-submit-btn:hover:not(:disabled) {
+    background: var(--gradient-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(166, 138, 100, 0.3);
+}
+
+.feedback-submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: var(--journal-shadow);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .feedback-badge {
+        bottom: 16px;
+        right: 16px;
+        width: 48px;
+        height: 48px;
+    }
+
+    .feedback-modal-overlay {
+        padding: 16px;
+    }
+
+    .feedback-modal {
+        max-width: none;
+        width: 100%;
+        max-height: 85vh;
+    }
+
+    .feedback-modal-header {
+        padding: 20px 20px 12px 20px;
+    }
+
+    .feedback-modal-header h3 {
+        font-size: 1.3rem;
+    }
+
+    .feedback-form {
+        padding: 20px;
+    }
+
+    .feedback-actions {
+        flex-direction: column-reverse;
+    }
+
+    .feedback-cancel-btn,
+    .feedback-submit-btn {
+        width: 100%;
+        padding: 14px 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .feedback-badge {
+        bottom: 12px;
+        right: 12px;
+        width: 44px;
+        height: 44px;
+    }
+
+    .feedback-modal-overlay {
+        padding: 12px;
+    }
+
+    .feedback-modal-header {
+        padding: 16px 16px 12px 16px;
+    }
+
+    .feedback-form {
+        padding: 16px;
+    }
+}

@@ -3,6 +3,7 @@ import IndividualConnection from './IndividualConnection'
 import './App.css'
 import { useAuth0 } from '@auth0/auth0-react';
 import { Maintenance } from './maintenance/Maintenance';
+import FeedbackWidget from './FeedbackWidget';
 
 function Storyteller() {
   return <div><h2>Storyteller</h2><p>Educational content in a narrative style.</p></div>;
@@ -46,6 +47,7 @@ function App() {
           </Routes>
         </div>
       </div>
+      <FeedbackWidget />
     </div>
   )
 }
