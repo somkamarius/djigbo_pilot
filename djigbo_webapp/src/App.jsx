@@ -1,4 +1,4 @@
-import { Routes, Route, Link, useLocation } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import IndividualConnection from './IndividualConnection'
 import './App.css'
 import { useAuth0 } from '@auth0/auth0-react';
@@ -16,7 +16,7 @@ function Democracy() {
 
 
 function App() {
-  const location = useLocation();
+  // const location = useLocation();
   const { isAuthenticated, isLoading, error } = useAuth0();
 
   if (isLoading) {
@@ -35,11 +35,11 @@ function App() {
 
   return (
     <div className="App">
-      <div className="circle-nav" style={{ marginBottom: 0, marginTop: 32 }}>
+      {/* <div className="circle-nav" style={{ marginBottom: 0, marginTop: 32 }}>
         <Link to="/" className={`circle-link${location.pathname === '/' ? ' active' : ''}`}>Džigbo Empatijos chatbotas</Link>
         <Link to="/storyteller" className={`circle-link${location.pathname === '/storyteller' ? ' active' : ''}`}>Empatijos Ratas</Link>
         <Link to="/democracy" className={`circle-link${location.pathname === '/democracy' ? ' active' : ''}`}>Kita Funkcija</Link>
-      </div>
+      </div> */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
         <div style={{ marginTop: 32 }}>
           <Routes>
