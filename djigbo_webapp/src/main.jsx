@@ -14,6 +14,8 @@ createRoot(document.getElementById('root')).render(
         redirect_uri: window.location.origin,
         audience: "https://dev-y90go66m.us.auth0.com/api/v2/"
       }}
+      useRefreshTokens={true}
+      cacheLocation="localstorage"
     >
       <BrowserRouter>
         <App />

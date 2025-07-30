@@ -253,29 +253,60 @@
 @media (max-width: 768px) {
     .conversation-bookmark {
         position: fixed;
-        left: 10px;
-        right: 10px;
-        width: auto;
-        max-width: 300px;
-        margin: 0 auto;
-        top: 20px;
+        left: 50%;
+        transform: translateX(calc(-50% - 100px));
+        top: 10px;
+        width: 80px;
+        height: 50px;
+        border-radius: 8px;
+    }
+
+    .conversation-bookmark:hover {
+        transform: translateX(calc(-50% - 100px)) translateY(-2px);
     }
 
     .bookmark-content {
         max-height: 40vh;
     }
+
+    .bookmark-header {
+        padding: 8px 6px;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .bookmark-icon {
+        font-size: 18px;
+        margin-bottom: 2px;
+    }
+
+    .bookmark-title {
+        font-size: 12px;
+        line-height: 1.1;
+        text-align: center;
+    }
+
+    .bookmark-count {
+        display: none;
+    }
 }
 
 @media (max-width: 480px) {
     .conversation-bookmark {
-        left: 5px;
-        right: 5px;
-        max-width: none;
-        top: 15px;
+        left: 50%;
+        transform: translateX(calc(-50% - 85px));
+        top: 8px;
+        width: 70px;
+        height: 45px;
+    }
+
+    .conversation-bookmark:hover {
+        transform: translateX(calc(-50% - 85px)) translateY(-2px);
     }
 
     .bookmark-header {
-        padding: 12px 16px;
+        padding: 6px 4px;
+        gap: 2px;
     }
 
     .conversation-item {
@@ -283,7 +314,46 @@
     }
 
     .bookmark-title {
+        font-size: 11px;
+    }
+
+    .bookmark-icon {
+        font-size: 16px;
+    }
+
+    .bookmark-count {
+        display: none;
+    }
+}
+
+@media (max-width: 360px) {
+    .conversation-bookmark {
+        left: 50%;
+        transform: translateX(calc(-50% - 70px));
+        top: 6px;
+        width: 60px;
+        height: 40px;
+    }
+
+    .conversation-bookmark:hover {
+        transform: translateX(calc(-50% - 70px)) translateY(-2px);
+    }
+
+    .bookmark-header {
+        padding: 5px 3px;
+        gap: 1px;
+    }
+
+    .bookmark-title {
+        font-size: 10px;
+    }
+
+    .bookmark-icon {
         font-size: 14px;
+    }
+
+    .bookmark-count {
+        display: none;
     }
 }
 
@@ -373,12 +443,18 @@
 @media (max-width: 768px) {
     .main-content-area {
         margin-right: 0px;
-        padding-top: 120px;
+        padding-top: 80px;
     }
 }
 
 @media (max-width: 480px) {
     .main-content-area {
-        padding-top: 100px;
+        padding-top: 70px;
+    }
+}
+
+@media (max-width: 360px) {
+    .main-content-area {
+        padding-top: 60px;
     }
 }

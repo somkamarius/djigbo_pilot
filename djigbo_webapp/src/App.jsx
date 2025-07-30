@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react';
 import IndividualConnection from './IndividualConnection'
 import './App.css'
@@ -6,8 +6,10 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { Maintenance } from './maintenance/Maintenance';
 import { Loading } from './maintenance/Loading';
 import ConversationBookmark from './ConversationBookmark';
-import A2NavigationButton from './A2NavigationButton';
+import ClimateNavigationButton from './ClimateNavigationButton';
+import LogoutButton from './LogoutButton';
 import AdminPanel from './AdminPanel';
+import { Climate } from './climate';
 // import FeedbackWidget from './FeedbackWidget';
 
 function Storyteller() {
@@ -17,7 +19,6 @@ function Storyteller() {
 function Democracy() {
   return <div><h2>Class Democracy</h2><p>Ideas, problems, and democratic tools for the class.</p></div>;
 }
-
 
 function App() {
   // const location = useLocation();
@@ -64,10 +65,6 @@ function App() {
 
   console.log(isAuthenticated);
 
-  if (!isAuthenticated) {
-    return <Maintenance />;
-  }
-
   return (
     <div className="App">
       {/* <div className="circle-nav" style={{ marginBottom: 0, marginTop: 32 }}>
@@ -79,15 +76,25 @@ function App() {
         onConversationSelect={handleConversationSelect}
         selectedConversationId={selectedConversationId}
       />
-      <A2NavigationButton />
+      <ClimateNavigationButton />
+      <LogoutButton />
       <div className="main-content-area">
         <div style={{ marginTop: 32 }}>
           <Routes>
-            <Route path="/" element={<IndividualConnection />} />
-            <Route path="/storyteller" element={<Storyteller />} />
-            <Route path="/democracy" element={<Democracy />} />
-            <Route path="/a2" element={<Maintenance />} />
-            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/" element={
+              isAuthenticated ? <Navigate to="/chat" replace /> : <Navigate to="/maintenance" replace />
+            } />
+            <Route path="/chat" element={
+              isAuthenticated ? <IndividualConnection /> : <Navigate to="/maintenance" replace />
+            } />
+            <Route path="/maintenance" element={<Maintenance />} />
+            <Route path="/storyteller" element={
+              isAuthenticated ? <Storyteller /> : <Navigate to="/maintenance" replace />
+            } />
+            <Route path="/democracy" element={
+              isAuthenticated ? <Democracy /> : <Navigate to="/maintenance" replace />
+            } />
+            <Route path="/climate" element={<Climate />} />
           </Routes>
         </div>
       </div>
