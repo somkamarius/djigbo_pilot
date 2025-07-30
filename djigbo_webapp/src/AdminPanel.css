@@ -1,0 +1,305 @@
+.admin-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    z-index: 9999;
+    padding-top: 20px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.admin-panel {
+    width: 400px;
+    max-height: 60vh;
+    background: var(--journal-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--journal-shadow-deep);
+    font-family: 'JetBrains Mono', monospace;
+    animation: slideIn 0.3s ease-out;
+    border: 1px solid var(--journal-border);
+}
+
+@keyframes slideIn {
+    from {
+        transform: scale(0.95) translateY(-10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.admin-main-view {
+    padding: 20px 16px;
+    text-align: center;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: var(--journal-paper);
+}
+
+.admin-header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.admin-title-section {
+    flex: 1;
+}
+
+.admin-title {
+    color: var(--journal-text);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0 0 2px 0;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.02em;
+}
+
+.admin-subtitle {
+    color: var(--journal-text-light);
+    font-size: 0.75rem;
+    font-weight: 400;
+    font-family: 'JetBrains Mono', monospace;
+    margin: 0;
+}
+
+.close-button {
+    background: var(--glass-bg);
+    border: 1px solid var(--journal-border);
+    color: var(--journal-text);
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s ease;
+    backdrop-filter: var(--glass-blur);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--journal-shadow);
+}
+
+.close-button:hover {
+    background: var(--primary);
+    border-color: var(--primary-dark);
+    transform: scale(1.05);
+}
+
+.admin-buttons-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.admin-button {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid var(--journal-border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--journal-shadow);
+    position: relative;
+    overflow: hidden;
+    color: var(--journal-text);
+    background: var(--journal-bg);
+    text-transform: none;
+    letter-spacing: 0.01em;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-button:hover {
+    background: var(--primary);
+    border-color: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--journal-shadow-deep);
+}
+
+.admin-button:active {
+    transform: translateY(0);
+    box-shadow: var(--journal-shadow);
+}
+
+.conversations-btn {
+    background: var(--journal-bg);
+    border-color: var(--journal-accent);
+}
+
+.conversations-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary-dark);
+}
+
+.sensitive-topics-btn {
+    background: var(--journal-bg);
+    border-color: var(--journal-accent);
+}
+
+.sensitive-topics-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary-dark);
+}
+
+.users-help-btn {
+    background: var(--journal-bg);
+    border-color: var(--journal-accent);
+}
+
+.users-help-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary-dark);
+}
+
+/* Content views */
+.admin-content-view {
+    background: var(--journal-paper);
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-header {
+    background: var(--journal-bg);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--journal-text);
+    border-bottom: 1px solid var(--journal-border);
+}
+
+.admin-header h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--journal-text);
+}
+
+.back-button {
+    background: var(--glass-bg);
+    border: 1px solid var(--journal-border);
+    color: var(--journal-text);
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s ease;
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--journal-shadow);
+}
+
+.back-button:hover {
+    background: var(--primary);
+    border-color: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.admin-content {
+    padding: 16px;
+    color: var(--journal-text);
+    flex: 1;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.admin-content p {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--journal-text-light);
+    margin: 0;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .admin-panel {
+        width: 90vw;
+        max-width: 350px;
+        max-height: 70vh;
+    }
+
+    .admin-main-view {
+        padding: 16px 12px;
+    }
+
+    .admin-title {
+        font-size: 1rem;
+    }
+
+    .admin-button {
+        padding: 3px 6px;
+        font-size: 0.65rem;
+        min-height: 20px;
+    }
+
+    .admin-content-view {
+        max-height: 70vh;
+    }
+
+    .admin-header {
+        padding: 10px 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .admin-header h2 {
+        font-size: 0.9rem;
+    }
+
+    .admin-content {
+        padding: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-title {
+        font-size: 0.9rem;
+    }
+
+    .admin-button {
+        padding: 2px 4px;
+        font-size: 0.6rem;
+        min-height: 18px;
+    }
+
+    .admin-buttons-container {
+        gap: 4px;
+    }
+}

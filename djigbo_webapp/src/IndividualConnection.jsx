@@ -1,17 +1,13 @@
 import { useRef, useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import ReactMarkdown from 'react-markdown';
+import InlineFeedbackWidget from './InlineFeedbackWidget';
 import './App.css';
 
 // const API_URL = "http://localhost:4000/api/chat";
-const API_URL = "http://localhost:3002/api/chat-mock";
-
-const MODEL_OPTIONS = [
-  { label: 'Llama 3 8B', value: 'meta.llama3-8b-instruct' },
-  { label: 'Llama 3 70B', value: 'meta.llama3-70b-instruct' },
-  { label: 'Claude 3 Sonnet', value: 'anthropic.claude-3-sonnet-20240229-v1:0' },
-  { label: 'Claude 3 Haiku', value: 'anthropic.claude-3-haiku-20240307-v1:0' },
-];
+// const API_URL = "http://localhost:3002/api/chat-mock";
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/chat-mock`;
+// const API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/ollama-chat`;
 
 export default function IndividualConnection() {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
@@ -58,7 +54,6 @@ export default function IndividualConnection() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(MODEL_OPTIONS[0].value);
   const chatEndRef = useRef(null);
 
   // Add conversation ID state management
@@ -178,54 +173,37 @@ export default function IndividualConnection() {
       {/* Journal Header */}
       <div className="journal-header">
         <div className="journal-title">
-          <h1>Mano Dienoraštis</h1>
-          <div className="journal-subtitle">Džigbo Empatijos Užrašai</div>
+          <h1 style={{ marginBottom: '2px' }}>Džigbo Empatijos chatbotas</h1>
+          <div className="journal-subtitle">Reflektuokime, eliminuokime interpretacijas ir vertinimus.  Įsivardinkime savo jausmus ir poreikius. </div>
         </div>
         <div className="journal-date">
           {new Date().toLocaleDateString('lt-LT', {
             weekday: 'long',
             year: 'numeric',
-            month: 'long',
+            month: 'numeric',
             day: 'numeric'
-          })}
+          }).toLocaleLowerCase('lt-LT')}
         </div>
       </div>
 
       {/* Model Selector and New Conversation Button */}
       <div className="model-selector">
-        <label htmlFor="model-select">Modelis:</label>
-        <select
-          id="model-select"
-          value={selectedModel}
-          onChange={e => setSelectedModel(e.target.value)}
-        >
-          {MODEL_OPTIONS.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
         <button
           onClick={handleNewConversation}
           className="new-conversation-btn"
           title="Start a new conversation"
+          disabled={messages.filter(m => m.role !== 'system').length === 0}
         >
-          New Conversation
+          Naujas pokalbis
         </button>
-        {currentConversationId && (
-          <div className="conversation-status">
-            <span className="conversation-label">Conversation ID:</span>
-            <span className="conversation-id">{currentConversationId.substring(0, 20)}...</span>
-          </div>
-        )}
       </div>
 
       {/* Journal Content */}
       <div className="journal-content">
         <div className="journal-pages">
           {messages.filter(m => m.role !== 'system').length === 0 ? (
-            <div className="journal-entry assistant">
-              <div className="entry-content">
-                <p>Labs! Kaip tu šiandien? Pasidalink savo mintimis...</p>
-              </div>
+            <div className="empty-chat-placeholder">
+              <p>Labs! Kaip tu šiandien? Pasidalink savo mintimis...</p>
             </div>
           ) : (
             messages
@@ -242,6 +220,20 @@ export default function IndividualConnection() {
                 </div>
               ))
           )}
+
+          {loading && (
+            <div className="journal-entry assistant">
+              <div className="entry-content loading-message">
+                <div className="loading-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <p>Džigbo galvoja...</p>
+              </div>
+            </div>
+          )}
+
           <div ref={chatEndRef} />
         </div>
       </div>
@@ -254,29 +246,36 @@ export default function IndividualConnection() {
               className="journal-input"
               value={input}
               onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage(e);
+                }
+              }}
               placeholder="Parašyk savo mintis čia..."
               disabled={loading}
               rows={3}
             />
-            <button
-              className="journal-send-btn"
-              type="submit"
-              disabled={loading || !input.trim()}
-            >
-              {loading ? 'Rašo...' : 'Įrašyti'}
-            </button>
+            <div className="input-actions">
+              <InlineFeedbackWidget />
+              <button
+                className="journal-send-btn"
+                type="submit"
+                disabled={loading || !input.trim()}
+              >
+                {loading ? 'Rašo...' : 'Įrašyti'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
 
-      {loading && (
-        <div className="journal-loading">
-          <div className="loading-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <p>Džigbo galvoja...</p>
+
+
+      {/* Hidden conversation ID at bottom with very low transparency */}
+      {currentConversationId && (
+        <div className="conversation-id-bottom">
+          <span className="conversation-id-text">{currentConversationId}</span>
         </div>
       )}
     </div>

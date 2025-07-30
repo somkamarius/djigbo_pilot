@@ -18,9 +18,9 @@ export const Maintenance: React.FC = () => {
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
-            background: "rgb(242, 241, 239)",
+            background: "linear-gradient(135deg,rgb(252, 250, 246) 0%, #e8e4d8 50%,rgb(223, 210, 181) 100%)",
             color: "#5C4A2D",
-            fontFamily: "Palemonas, 'Times New Roman', Times, serif",
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             zIndex: 9999,
             padding: "1rem",
             boxSizing: "border-box",
@@ -31,16 +31,17 @@ export const Maintenance: React.FC = () => {
                 width: "100%",
             }}>
                 <h1 style={{
-                    fontSize: "clamp(1.8rem, 5vw, 2.5rem)",
+                    fontSize: "clamp(2.5rem, 5vw, 3.5rem)",
                     fontWeight: 700,
                     marginBottom: "1rem",
                     color: "#a68a64",
                     lineHeight: 1.2,
+                    fontFamily: 'Inter',
                 }}>
                     Djigbo kuriasi ir auga
                 </h1>
                 <p style={{
-                    fontSize: "clamp(1rem, 3vw, 1.1rem)",
+                    fontSize: "clamp(1.2rem, 3vw, 1.8rem)",
                     color: "#a68a64",
                     marginBottom: "2rem",
                     lineHeight: 1.4,
@@ -59,7 +60,7 @@ export const Maintenance: React.FC = () => {
                         cursor: "pointer",
                         boxShadow: "0 2px 8px rgba(166, 138, 100, 0.08)",
                         transition: "all 0.2s",
-                        fontFamily: "Palemonas, 'Times New Roman', Times, serif",
+                        fontFamily: "'JetBrains Mono', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                         minWidth: "200px",
                         maxWidth: "90vw",
                     }}

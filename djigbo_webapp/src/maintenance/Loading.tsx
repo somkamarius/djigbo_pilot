@@ -16,7 +16,7 @@ export const Loading: React.FC = () => {
             alignItems: "center",
             background: "rgb(242, 241, 239)",
             color: "#5C4A2D",
-            fontFamily: "Palemonas, 'Times New Roman', Times, serif",
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             zIndex: 9999,
         }}>
             <div style={{

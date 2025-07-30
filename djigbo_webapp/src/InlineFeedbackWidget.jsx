@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import './FeedbackWidget.css';
 
-const FeedbackWidget = () => {
+const InlineFeedbackWidget = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [feedbackText, setFeedbackText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,12 +60,13 @@ const FeedbackWidget = () => {
 
     return (
         <>
-            {/* Feedback Badge */}
+            {/* Inline Feedback Button */}
             <button
-                className="feedback-badge"
+                className="inline-feedback-btn"
                 onClick={() => setIsModalOpen(true)}
                 title="Pateikti atsiliepimą"
                 aria-label="Pateikti atsiliepimą"
+                type="button"
             >
                 Atsiliepimas
             </button>
@@ -142,4 +143,4 @@ const FeedbackWidget = () => {
     );
 };
 
-export default FeedbackWidget; 
+export default InlineFeedbackWidget; 
