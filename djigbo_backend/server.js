@@ -5,7 +5,7 @@ const { bedrockChatHandler } = require('./bedrockChatHandler');
 const { ollamaChatHandler } = require('./ollamaChatHandler');
 const { togetherChatHandler } = require('./togetherChatHandler');
 const { checkJwt, auth0ErrorHandler, extractUserInfo, debugToken } = require('./auth0Middleware');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+
 const {
   getUserConversationSummaries,
   getConversationSummary,
@@ -85,26 +85,19 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// Kibana proxy endpoint
-app.use('/kibana', createProxyMiddleware({
-  target: 'http://kibana:5601',
-  changeOrigin: true,
-  pathRewrite: {
-    '^/kibana': ''
-  },
-  onError: (err, req, res) => {
-    logger.error('Kibana proxy error:', {
-      error: err.message,
-      url: req.url,
-      timestamp: new Date().toISOString()
-    });
-    res.status(503).json({
-      error: 'Kibana service unavailable',
-      message: 'Kibana is not running or not accessible',
-      timestamp: new Date().toISOString()
-    });
-  }
-}));
+// Kibana endpoint - shows status since Kibana is not available on DigitalOcean App Platform
+app.get('/kibana', (req, res) => {
+  res.status(503).json({
+    error: 'Kibana service unavailable',
+    message: 'Kibana is not running on DigitalOcean App Platform. To access Kibana, you need to run it separately or use a different deployment strategy.',
+    timestamp: new Date().toISOString(),
+    suggestions: [
+      'Run Kibana locally with docker-compose up',
+      'Deploy to a platform that supports multi-service deployments (like DigitalOcean Droplets with Docker)',
+      'Use a managed ELK stack service'
+    ]
+  });
+});
 
 // USAGE:
 // POST /api/chat
@@ -210,10 +203,19 @@ app.post('/api/chat-mock', debugToken, checkJwt, extractUserInfo, asyncHandler(a
   try {
     const { conversation_id } = req.body;
     const convId = conversation_id || generateConversationId();
-
+    console.log({
+      content: "This is a mock response from the chat-mock endpoint. Hello from the mock server!",
+      conversation_id: convId,
+      messages: req.body.messages,
+    })
+    logger.info(JSON.stringify({
+      content: "This is a mock response from the chat-mock endpoint. Hello from the mock server!",
+      conversation_id: convId,
+      messages: req.body.messages,
+    }));
     res.json({
       content: "This is a mock response from the chat-mock endpoint. Hello from the mock server!",
-      conversation_id: convId
+      conversation_id: convId,
     });
   } catch (error) {
     logger.error('Error in /api/chat-mock endpoint:', {
@@ -483,5 +485,5 @@ app.get('/api/feedback/stats', debugToken, checkJwt, extractUserInfo, asyncHandl
   }
 }));
 
-logger.info('Server started');
+logger.info('Server started v2');
 

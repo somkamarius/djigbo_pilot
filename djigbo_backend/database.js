@@ -244,7 +244,7 @@ async function generateConversationSummaryV2(messages, assistantResponse, provid
         const fullConversation = `${conversationText}\nassistant: ${assistantResponse}`;
 
         // Create a summary prompt
-        const summaryPrompt = `Please analyze the user's personality based on the Big Five personality traits (Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism) from this conversation. Provide a concise summary in 1-2 sentences focusing on the user's personality characteristics, communication style, and behavioral patterns:
+        const summaryPrompt = `Please analyze the user's personality based on the Big Five personality traits (Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism) from this conversation. Provide a concise summary in only 10 words focusing on the user's personality characteristics, communication style, and behavioral patterns:
 
 ${fullConversation}
 
