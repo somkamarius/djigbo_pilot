@@ -61,7 +61,7 @@ function App() {
       setCheckingUser(true);
       try {
         const token = await getAccessTokenSilently();
-        const response = await fetch('/api/user/check', {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/check`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
