@@ -43,6 +43,17 @@ function initializeDatabase() {
     )
   `;
 
+    const createUsersTableSQL = `
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      auth0_user_id TEXT UNIQUE NOT NULL,
+      nickname TEXT NOT NULL,
+      avatar TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
     return new Promise((resolve, reject) => {
         // Create conversation summaries table
         db.run(createConversationTableSQL, (err) => {
@@ -59,7 +70,17 @@ function initializeDatabase() {
                         reject(err);
                     } else {
                         logger.info('Feedback table ready');
-                        resolve();
+
+                        // Create users table
+                        db.run(createUsersTableSQL, (err) => {
+                            if (err) {
+                                logger.error('Error creating users table:', err.message);
+                                reject(err);
+                            } else {
+                                logger.info('Users table ready');
+                                resolve();
+                            }
+                        });
                     }
                 });
             }
@@ -432,6 +453,66 @@ function getFeedbackStats() {
     });
 }
 
+// Check if user exists in the users table
+function getUserByAuth0Id(auth0UserId) {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      SELECT * FROM users 
+      WHERE auth0_user_id = ?
+    `;
+
+        db.get(sql, [auth0UserId], (err, row) => {
+            if (err) {
+                logger.error('Error getting user by Auth0 ID:', err.message);
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
+// Create a new user
+function createUser(auth0UserId, nickname, avatar = null) {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      INSERT INTO users (auth0_user_id, nickname, avatar, created_at, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `;
+
+        db.run(sql, [auth0UserId, nickname, avatar], function (err) {
+            if (err) {
+                logger.error('Error creating user:', err.message);
+                reject(err);
+            } else {
+                logger.info(`Created user with Auth0 ID ${auth0UserId}`);
+                resolve(this.lastID);
+            }
+        });
+    });
+}
+
+// Update user information
+function updateUser(auth0UserId, nickname, avatar = null) {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      UPDATE users 
+      SET nickname = ?, avatar = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE auth0_user_id = ?
+    `;
+
+        db.run(sql, [nickname, avatar, auth0UserId], function (err) {
+            if (err) {
+                logger.error('Error updating user:', err.message);
+                reject(err);
+            } else {
+                logger.info(`Updated user with Auth0 ID ${auth0UserId}`);
+                resolve(this.changes);
+            }
+        });
+    });
+}
+
 // Close database connection
 function closeDatabase() {
     db.close((err) => {
@@ -463,5 +544,8 @@ module.exports = {
     getUserFeedback,
     getAllFeedback,
     getFeedbackStats,
+    getUserByAuth0Id,
+    createUser,
+    updateUser,
     closeDatabase
 }; 

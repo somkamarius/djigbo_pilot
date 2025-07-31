@@ -17,7 +17,10 @@ const {
   saveFeedback,
   getUserFeedback,
   getAllFeedback,
-  getFeedbackStats
+  getFeedbackStats,
+  getUserByAuth0Id,
+  createUser,
+  updateUser
 } = require('./database');
 
 // At the top of server.js
@@ -479,6 +482,112 @@ app.get('/api/feedback/stats', debugToken, checkJwt, extractUserInfo, asyncHandl
       error: error.message,
       stack: error.stack,
       userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Check if user exists endpoint
+app.get('/api/user/check', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const user = await getUserByAuth0Id(userId);
+
+    res.json({
+      exists: !!user,
+      user: user || null,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/user/check endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Register new user endpoint
+app.post('/api/user/register', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const { nickname, avatar } = req.body;
+
+    if (!nickname || typeof nickname !== 'string' || nickname.trim() === '') {
+      return res.status(400).json({
+        error: 'nickname is required and must be a non-empty string',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await getUserByAuth0Id(userId);
+    if (existingUser) {
+      return res.status(409).json({
+        error: 'User already exists',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Create new user
+    const newUserId = await createUser(userId, nickname.trim(), avatar || null);
+
+    res.json({
+      message: 'User registered successfully',
+      userId: newUserId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in POST /api/user/register endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      body: req.body,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Update user endpoint
+app.put('/api/user/update', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const { nickname, avatar } = req.body;
+
+    if (!nickname || typeof nickname !== 'string' || nickname.trim() === '') {
+      return res.status(400).json({
+        error: 'nickname is required and must be a non-empty string',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Check if user exists
+    const existingUser = await getUserByAuth0Id(userId);
+    if (!existingUser) {
+      return res.status(404).json({
+        error: 'User not found',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Update user
+    const updatedCount = await updateUser(userId, nickname.trim(), avatar || null);
+
+    res.json({
+      message: 'User updated successfully',
+      updatedCount,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in PUT /api/user/update endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      body: req.body,
       timestamp: new Date().toISOString()
     });
     throw error;
