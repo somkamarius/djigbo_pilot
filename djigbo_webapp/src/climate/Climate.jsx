@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import './Climate.css';
 import { MoodGraph } from './MoodGraph';
 import { MoodGraph2D } from './MoodGraph2D';
 import { ParticipantFeedback } from './ParticipantFeedback';
+import { MoodLineChart } from './MoodLineChart';
 
 export const Climate = () => {
+    const { getAccessTokenSilently } = useAuth0();
     const [currentMood, setCurrentMood] = useState(3);
     const [moodText, setMoodText] = useState('');
     const [activeTab, setActiveTab] = useState('camp');
@@ -12,45 +15,121 @@ export const Climate = () => {
     const [use3DGraph, setUse3DGraph] = useState(true);
     const [graphError, setGraphError] = useState(false);
 
-    // Mock data for camp-wide mood
-    const campMoodData = [
-        { day: 'Pirmadienis', avgMood: 4.2, participants: 24, thoughts: 'Labai gerai pradėjome stovyklą! Visi susipažinome ir pradėjome veiklą su entuziazmu.' },
-        { day: 'Antradienis', avgMood: 3.8, participants: 24, thoughts: 'Šiek tiek pavargome po intensyvių veiklų, bet vis dar smagu. Oras buvo šaltesnis nei tikėtasi.' },
-        { day: 'Trečiadienis', avgMood: 4.5, participants: 23, thoughts: 'Puikus oras, puikūs veiksmai! Visi dalyvavo žaidimuose ir buvo labai aktyvūs.' },
-        { day: 'Ketvirtadienis', avgMood: 4.1, participants: 24, thoughts: 'Artėja stovyklos pabaiga, šiek tiek liūdna. Bet vis dar smagu ir veiklų daug.' },
-        { day: 'Penktadienis', avgMood: 4.7, participants: 24, thoughts: 'Paskutinė diena - visi labai susijaudinę! Puiki stovykla, visi norėtų dar ilgiau.' },
-        { day: 'Šeštadienis', avgMood: 4.3, participants: 22, thoughts: 'Papildoma diena stovyklai! Mažiau dalyvių, bet vis dar smagu ir veiklų daug.' },
-        { day: 'Sekmadienis', avgMood: 4.8, participants: 20, thoughts: 'Paskutinė diena - visi labai susijaudinę! Puiki stovykla, visi norėtų dar ilgiau.' },
-        { day: 'Pirmadienis', avgMood: 3.9, participants: 18, thoughts: 'Nauja savaitė prasidėjo! Kai kurie dalyviai grįžo, kiti išvyko. Vis dar smagu.' },
-        { day: 'Antradienis', avgMood: 4.4, participants: 20, thoughts: 'Puikus oras, puikūs veiksmai! Visi dalyvavo žaidimuose ir buvo labai aktyvūs.' },
-        { day: 'Trečiadienis', avgMood: 4.6, participants: 21, thoughts: 'Labai gerai pradėjome stovyklą! Visi susipažinome ir pradėjome veiklą su entuziazmu.' },
-        { day: 'Ketvirtadienis', avgMood: 4.0, participants: 19, thoughts: 'Šiek tiek pavargome po intensyvių veiklų, bet vis dar smagu. Oras buvo šaltesnis nei tikėtasi.' },
-        { day: 'Penktadienis', avgMood: 4.9, participants: 22, thoughts: 'Paskutinė diena - visi labai susijaudinę! Puiki stovykla, visi norėtų dar ilgiau.' }
-    ];
+    // Real data states
+    const [campMoodData, setCampMoodData] = useState([]);
+    const [personalMoodData, setPersonalMoodData] = useState([]);
+    const [todayMood, setTodayMood] = useState({ avgMood: 0, participantCount: 0 });
+    const [overallStats, setOverallStats] = useState({});
+    const [personalStats, setPersonalStats] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
-    // Mock data for personal mood history
-    const personalMoodData = [
-        { day: 'Pirmadienis', mood: 4, thoughts: 'Labai gerai pradėjome stovyklą! Susipažinau su daugeliu naujų žmonių.' },
-        { day: 'Antradienis', mood: 3, thoughts: 'Šiek tiek pavargau po intensyvių veiklų, bet vis dar smagu. Oras buvo šaltesnis.' },
-        { day: 'Trečiadienis', mood: 5, thoughts: 'Puikus oras, puikūs veiksmai! Dalyvavau visuose žaidimuose ir buvau labai aktyvus.' },
-        { day: 'Ketvirtadienis', mood: 4, thoughts: 'Artėja stovyklos pabaiga, šiek tiek liūdna. Bet vis dar smagu ir veiklų daug.' },
-        { day: 'Penktadienis', mood: 5, thoughts: 'Paskutinė diena - labai susijaudinęs! Puiki stovykla, norėčiau dar ilgiau.' },
-        { day: 'Šeštadienis', mood: 4, thoughts: 'Papildoma diena stovyklai! Mažiau dalyvių, bet vis dar smagu ir veiklų daug.' },
-        { day: 'Sekmadienis', mood: 5, thoughts: 'Paskutinė diena - labai susijaudinęs! Puiki stovykla, norėčiau dar ilgiau.' },
-        { day: 'Pirmadienis', mood: 4, thoughts: 'Nauja savaitė prasidėjo! Kai kurie dalyviai grįžo, kiti išvyko. Vis dar smagu.' },
-        { day: 'Antradienis', mood: 4, thoughts: 'Puikus oras, puikūs veiksmai! Dalyvavau žaidimuose ir buvau aktyvus.' },
-        { day: 'Trečiadienis', mood: 5, thoughts: 'Labai gerai pradėjome stovyklą! Susipažinau su daugeliu naujų žmonių.' },
-        { day: 'Ketvirtadienis', mood: 3, thoughts: 'Šiek tiek pavargau po intensyvių veiklų, bet vis dar smagu. Oras buvo šaltesnis.' },
-        { day: 'Penktadienis', mood: 5, thoughts: 'Paskutinė diena - labai susijaudinęs! Puiki stovykla, norėčiau dar ilgiau.' }
-    ];
+    // API functions
+    const fetchCampMoodData = async () => {
+        try {
+            const token = await getAccessTokenSilently();
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/mood/camp`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-    const handleMoodSubmit = (e) => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch camp mood data');
+            }
+
+            const data = await response.json();
+            setCampMoodData(data.campData || []);
+            setTodayMood(data.today || { avgMood: 0, participantCount: 0 });
+            setOverallStats(data.overall || {});
+        } catch (err) {
+            console.error('Error fetching camp mood data:', err);
+            setError('Nepavyko gauti stovyklos nuotaikos duomenų');
+        }
+    };
+
+    const fetchPersonalMoodData = async () => {
+        try {
+            const token = await getAccessTokenSilently();
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/mood/personal`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch personal mood data');
+            }
+
+            const data = await response.json();
+            setPersonalMoodData(data.entries || []);
+            setPersonalStats(data.stats || {});
+        } catch (err) {
+            console.error('Error fetching personal mood data:', err);
+            setError('Nepavyko gauti asmeninių nuotaikos duomenų');
+        }
+    };
+
+    const submitMoodEntry = async (moodScore, thoughts) => {
+        try {
+            setSubmitting(true);
+            const token = await getAccessTokenSilently();
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/mood`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    moodScore,
+                    thoughts: thoughts || null
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to submit mood');
+            }
+
+            // Refresh data after successful submission
+            await Promise.all([fetchCampMoodData(), fetchPersonalMoodData()]);
+            return true;
+        } catch (err) {
+            console.error('Error submitting mood:', err);
+            setError('Nepavyko išsaugoti nuotaikos');
+            return false;
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // Load data on component mount
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                await Promise.all([fetchCampMoodData(), fetchPersonalMoodData()]);
+            } catch (err) {
+                console.error('Error loading mood data:', err);
+                setError('Nepavyko užkrauti duomenų');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+    }, []);
+
+    const handleMoodSubmit = async (e) => {
         e.preventDefault();
-        // Here you would send the mood data to the API
-        console.log('Mood submitted:', { mood: currentMood, thoughts: moodText });
-        alert('Jūsų nuotaika išsaugota!');
-        setMoodText('');
-        setShowMoodModal(false);
+        const success = await submitMoodEntry(currentMood, moodText);
+        if (success) {
+            alert('Jūsų nuotaika išsaugota!');
+            setMoodText('');
+            setShowMoodModal(false);
+        }
     };
 
     const handleCloseModal = () => {
@@ -118,102 +197,129 @@ export const Climate = () => {
             {/* Camp-wide Mood Overview */}
             {activeTab === 'camp' && (
                 <div className="camp-mood-section">
-                    <div className="mood-summary">
-                        <div className="summary-card">
-                            <h3>Šiandien</h3>
-                            <div className="summary-value">
-                                <span className="mood-number">4.2</span>
-                                <span className="mood-emoji">😊</span>
-                            </div>
-                            <p>24 dalyviai</p>
+                    {loading && (
+                        <div className="loading-message">
+                            <p>Kraunama...</p>
                         </div>
-                        <div className="summary-card">
-                            <h3>Vidutinė nuotaika</h3>
-                            <div className="summary-value">
-                                <span className="mood-number">4.3</span>
-                                <span className="mood-emoji">😊</span>
-                            </div>
-                            <p>Per visą stovyklą</p>
-                        </div>
-                        <div className="summary-card">
-                            <h3>Dalyvių skaičius</h3>
-                            <div className="summary-value">
-                                <span className="mood-number">24</span>
-                            </div>
-                            <p>Aktyvūs dalyviai</p>
-                        </div>
-                    </div>
+                    )}
 
-                    <div className="mood-table-container">
-                        <h3>Nuotaikos tendencijos per savaitę</h3>
-                        <div className="mood-table">
-                            <div className="table-header">
-                                <div className="header-cell">Diena</div>
-                                <div className="header-cell">Vid. nuotaika</div>
-                                <div className="header-cell">Dalyviai</div>
-                                <div className="header-cell">Pagrindinės mintys</div>
-                            </div>
-                            {campMoodData.map((day, index) => (
-                                <div key={index} className="table-row">
-                                    <div className="table-cell day-cell">{day.day}</div>
-                                    <div className="table-cell mood-cell">
-                                        <span className="mood-display">
-                                            {day.avgMood.toFixed(1)} {getMoodEmoji(day.avgMood)}
-                                        </span>
+                    {error && (
+                        <div className="error-message">
+                            <p>{error}</p>
+                            <button onClick={() => window.location.reload()} className="retry-button">
+                                Bandyti dar kartą
+                            </button>
+                        </div>
+                    )}
+
+                    {!loading && !error && (
+                        <>
+                            <div className="mood-summary">
+                                <div className="summary-card">
+                                    <h3>Šiandien</h3>
+                                    <div className="summary-value">
+                                        <span className="mood-number">{todayMood.avgMood ? todayMood.avgMood.toFixed(1) : '0.0'}</span>
+                                        <span className="mood-emoji">{getMoodEmoji(todayMood.avgMood || 0)}</span>
                                     </div>
-                                    <div className="table-cell participants-cell">{day.participants}</div>
-                                    <div className="table-cell thoughts-cell">{day.thoughts}</div>
+                                    <p>{todayMood.participantCount || 0} dalyviai</p>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Mood Graph with Error Handling */}
-                    {import.meta.env.VITE_ENABLE_CLIMATE_GRAPH === 'true' ? (
-                        <div className="graph-section">
-                            <div className="graph-toggle">
-                                <button
-                                    className={`toggle-btn ${use3DGraph ? 'active' : ''}`}
-                                    onClick={() => setUse3DGraph(true)}
-                                >
-                                    3D Vizualizacija
-                                </button>
-                                <button
-                                    className={`toggle-btn ${!use3DGraph ? 'active' : ''}`}
-                                    onClick={() => setUse3DGraph(false)}
-                                >
-                                    2D Vizualizacija
-                                </button>
+                                <div className="summary-card">
+                                    <h3>Vidutinė nuotaika</h3>
+                                    <div className="summary-value">
+                                        <span className="mood-number">{overallStats.overall_avg_mood ? overallStats.overall_avg_mood.toFixed(1) : '0.0'}</span>
+                                        <span className="mood-emoji">{getMoodEmoji(overallStats.overall_avg_mood || 0)}</span>
+                                    </div>
+                                    <p>Per visą stovyklą</p>
+                                </div>
+                                <div className="summary-card">
+                                    <h3>Dalyvių skaičius</h3>
+                                    <div className="summary-value">
+                                        <span className="mood-number">{overallStats.total_participants || 0}</span>
+                                    </div>
+                                    <p>Aktyvūs dalyviai</p>
+                                </div>
                             </div>
 
-                            {graphError && (
-                                <div className="graph-error">
-                                    <p>3D grafikas nepalaikomas. Perjungiama į 2D versiją.</p>
+                            <div className="mood-table-container">
+                                <h3>Nuotaikos tendencijos per savaitę</h3>
+                                <div className="mood-table">
+                                    <div className="table-header">
+                                        <div className="header-cell">Diena</div>
+                                        <div className="header-cell">Vid. nuotaika</div>
+                                        <div className="header-cell">Dalyviai</div>
+                                        <div className="header-cell">Pagrindinės mintys</div>
+                                    </div>
+                                    {campMoodData.length > 0 ? (
+                                        campMoodData.map((day, index) => (
+                                            <div key={index} className="table-row">
+                                                <div className="table-cell day-cell">{new Date(day.date).toLocaleDateString('lt-LT', { weekday: 'long' })}</div>
+                                                <div className="table-cell mood-cell">
+                                                    <span className="mood-display">
+                                                        {day.avg_mood ? day.avg_mood.toFixed(1) : '0.0'} {getMoodEmoji(day.avg_mood || 0)}
+                                                    </span>
+                                                </div>
+                                                <div className="table-cell participants-cell">{day.participant_count || 0}</div>
+                                                <div className="table-cell thoughts-cell">{day.thoughts || 'Nėra komentarų'}</div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="table-row">
+                                            <div className="table-cell" colSpan="4">
+                                                <p>Dar nėra nuotaikos duomenų</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
 
-                            {use3DGraph ? (
-                                <div onError={() => {
-                                    setGraphError(true);
-                                    setUse3DGraph(false);
-                                }}>
-                                    <MoodGraph campMoodData={campMoodData} />
+                            {/* Mood Graph with Error Handling */}
+                            {import.meta.env.VITE_ENABLE_CLIMATE_GRAPH === 'true' ? (
+                                <div className="graph-section">
+                                    <div className="graph-toggle">
+                                        <button
+                                            className={`toggle-btn ${use3DGraph ? 'active' : ''}`}
+                                            onClick={() => setUse3DGraph(true)}
+                                        >
+                                            3D Vizualizacija
+                                        </button>
+                                        <button
+                                            className={`toggle-btn ${!use3DGraph ? 'active' : ''}`}
+                                            onClick={() => setUse3DGraph(false)}
+                                        >
+                                            2D Vizualizacija
+                                        </button>
+                                    </div>
+
+                                    {graphError && (
+                                        <div className="graph-error">
+                                            <p>3D grafikas nepalaikomas. Perjungiama į 2D versiją.</p>
+                                        </div>
+                                    )}
+
+                                    {use3DGraph ? (
+                                        <div onError={() => {
+                                            setGraphError(true);
+                                            setUse3DGraph(false);
+                                        }}>
+                                            <MoodGraph campMoodData={campMoodData} />
+                                        </div>
+                                    ) : (
+                                        <MoodGraph2D campMoodData={campMoodData} />
+                                    )}
                                 </div>
                             ) : (
-                                <MoodGraph2D campMoodData={campMoodData} />
-                            )}
-                        </div>
-                    ) : (
-                        <div className="feature-disabled-message">
-                            <div className="message-content">
-                                <h3>📊 Nuotaikos Vizualizacija</h3>
-                                <p>Ši funkcija šiuo metu išjungta. Administratorius gali ją įjungti per aplinkos kintamuosius.</p>
-                                <div className="message-details">
-                                    <p><strong>Funkcija:</strong> 3D/2D nuotaikos grafikas</p>
-                                    <p><strong>Kintamasis:</strong> VITE_ENABLE_CLIMATE_GRAPH</p>
+                                <div className="feature-disabled-message">
+                                    <div className="message-content">
+                                        <h3>📊 Nuotaikos Vizualizacija</h3>
+                                        <p>Ši funkcija šiuo metu išjungta. Administratorius gali ją įjungti per aplinkos kintamuosius.</p>
+                                        <div className="message-details">
+                                            <p><strong>Funkcija:</strong> 3D/2D nuotaikos grafikas</p>
+                                            <p><strong>Kintamasis:</strong> VITE_ENABLE_CLIMATE_GRAPH</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            )}
+                        </>
                     )}
                 </div>
             )}
@@ -221,71 +327,78 @@ export const Climate = () => {
             {/* Personal Mood History */}
             {activeTab === 'personal' && (
                 <div className="personal-mood-section">
-                    <div className="personal-summary">
-                        <div className="summary-card">
-                            <h3>Mano vidutinė nuotaika</h3>
-                            <div className="summary-value">
-                                <span className="mood-number">4.2</span>
-                                <span className="mood-emoji">😊</span>
-                            </div>
-                            <p>Per visą stovyklą</p>
+                    {loading && (
+                        <div className="loading-message">
+                            <p>Kraunama...</p>
                         </div>
-                        <div className="summary-card">
-                            <h3>Geriausia diena</h3>
-                            <div className="summary-value">
-                                <span className="mood-number">5.0</span>
-                                <span className="mood-emoji">😊</span>
-                            </div>
-                            <p>Trečiadienis</p>
-                        </div>
-                        <div className="summary-card">
-                            <h3>Dienų skaičius</h3>
-                            <div className="summary-value">
-                                <span className="mood-number">5</span>
-                            </div>
-                            <p>Užpildyta dienų</p>
-                        </div>
-                    </div>
+                    )}
 
-                    <div className="personal-mood-chart">
-                        <h3>Mano nuotaikos progresas</h3>
-                        <div className="mood-chart">
-                            {personalMoodData.map((day, index) => (
-                                <div key={index} className="chart-day">
-                                    <div className="chart-bar">
-                                        <div
-                                            className="bar-fill"
-                                            style={{
-                                                height: `${(day.mood / 5) * 100}%`,
-                                                backgroundColor: getMoodColor(day.mood)
-                                            }}
-                                        ></div>
-                                    </div>
-                                    <div className="chart-label">
-                                        <span className="day-name">{day.day}</span>
-                                        <span className="day-mood">{day.mood}</span>
-                                    </div>
-                                </div>
-                            ))}
+                    {error && (
+                        <div className="error-message">
+                            <p>{error}</p>
+                            <button onClick={() => window.location.reload()} className="retry-button">
+                                Bandyti dar kartą
+                            </button>
                         </div>
-                    </div>
+                    )}
 
-                    <div className="personal-thoughts">
-                        <h3>Mano mintys per savaitę</h3>
-                        <div className="thoughts-list">
-                            {personalMoodData.map((day, index) => (
-                                <div key={index} className="thought-item">
-                                    <div className="thought-header">
-                                        <span className="thought-day">{day.day}</span>
-                                        <span className="thought-mood">
-                                            {day.mood} {getMoodEmoji(day.mood)}
-                                        </span>
+                    {!loading && !error && (
+                        <>
+                            <div className="personal-summary">
+                                <div className="summary-card">
+                                    <h3>Mano vidutinė nuotaika</h3>
+                                    <div className="summary-value">
+                                        <span className="mood-number">{personalStats.avg_mood ? personalStats.avg_mood.toFixed(1) : '0.0'}</span>
+                                        <span className="mood-emoji">{getMoodEmoji(personalStats.avg_mood || 0)}</span>
                                     </div>
-                                    <p className="thought-text">{day.thoughts}</p>
+                                    <p>Per visą stovyklą</p>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                                <div className="summary-card">
+                                    <h3>Geriausia diena</h3>
+                                    <div className="summary-value">
+                                        <span className="mood-number">{personalStats.max_mood || 0}</span>
+                                        <span className="mood-emoji">{getMoodEmoji(personalStats.max_mood || 0)}</span>
+                                    </div>
+                                    <p>Geriausias rezultatas</p>
+                                </div>
+                                <div className="summary-card">
+                                    <h3>Dienų skaičius</h3>
+                                    <div className="summary-value">
+                                        <span className="mood-number">{personalStats.days_with_entries || 0}</span>
+                                    </div>
+                                    <p>Užpildyta dienų</p>
+                                </div>
+                            </div>
+
+                            <div className="personal-mood-chart">
+                                <h3>Mano nuotaikos progresas</h3>
+                                <MoodLineChart data={personalMoodData} width={400} height={250} />
+                            </div>
+
+                            <div className="personal-thoughts">
+                                <h3>Mano mintys per savaitę</h3>
+                                <div className="thoughts-list">
+                                    {personalMoodData.length > 0 ? (
+                                        personalMoodData.map((entry, index) => (
+                                            <div key={index} className="thought-item">
+                                                <div className="thought-header">
+                                                    <span className="thought-day">{new Date(entry.created_at).toLocaleDateString('lt-LT', { weekday: 'long' })}</span>
+                                                    <span className="thought-mood">
+                                                        {entry.mood_score} {getMoodEmoji(entry.mood_score)}
+                                                    </span>
+                                                </div>
+                                                <p className="thought-text">{entry.thoughts || 'Nėra komentarų'}</p>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="no-data-message">
+                                            <p>Dar nėra nuotaikos įrašų</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
 
@@ -338,11 +451,11 @@ export const Climate = () => {
                                 </div>
 
                                 <div className="modal-actions">
-                                    <button type="button" className="cancel-btn" onClick={handleCloseModal}>
+                                    <button type="button" className="cancel-btn" onClick={handleCloseModal} disabled={submitting}>
                                         Atšaukti
                                     </button>
-                                    <button type="submit" className="submit-mood-btn">
-                                        Išsaugoti nuotaiką
+                                    <button type="submit" className="submit-mood-btn" disabled={submitting}>
+                                        {submitting ? 'Išsaugoma...' : 'Išsaugoti nuotaiką'}
                                     </button>
                                 </div>
                             </form>

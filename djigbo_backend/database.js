@@ -1,823 +1,788 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { Pool } = require('pg');
 const logger = require('./logger');
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
 const fetch = require('node-fetch');
+require('dotenv').config();
 
-// Database file path
-const dbPath = path.join(__dirname, 'conversations.db');
+// PostgreSQL connection configuration
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || 'djigbo_db',
+    user: process.env.DB_USER || 'username',
+    password: process.env.DB_PASSWORD || 'password',
+    max: 20, // Maximum number of clients in the pool
+    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+    connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+});
 
-// Create database connection
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        logger.error('Error opening database:', err.message);
-    } else {
-        logger.info('Connected to SQLite database');
-    }
+// Test database connection
+pool.on('connect', () => {
+    logger.info('Connected to PostgreSQL database');
+});
+
+pool.on('error', (err) => {
+    logger.error('Unexpected error on idle client', err);
+    process.exit(-1);
 });
 
 // Initialize database tables immediately
 initializeDatabase();
 
 // Initialize database tables
-function initializeDatabase() {
+async function initializeDatabase() {
     const createConversationTableSQL = `
     CREATE TABLE IF NOT EXISTS conversation_summaries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id TEXT NOT NULL,
       conversation_id TEXT NOT NULL,
       summary TEXT NOT NULL,
       message_count INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(user_id, conversation_id)
     )
   `;
 
     const createFeedbackTableSQL = `
     CREATE TABLE IF NOT EXISTS feedback (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id TEXT NOT NULL,
       feedback_text TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `;
 
     const createUsersTableSQL = `
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       auth0_user_id TEXT UNIQUE NOT NULL,
       nickname TEXT NOT NULL,
       avatar TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `;
 
     const createMoodTableSQL = `
     CREATE TABLE IF NOT EXISTS mood_entries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id TEXT NOT NULL,
       mood_score INTEGER NOT NULL CHECK (mood_score >= 1 AND mood_score <= 5),
       thoughts TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `;
 
     const createMoodStatsTableSQL = `
     CREATE TABLE IF NOT EXISTS mood_stats (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      date TEXT NOT NULL,
-      avg_mood REAL NOT NULL,
+      id SERIAL PRIMARY KEY,
+      date DATE NOT NULL,
+      avg_mood DECIMAL(3,2) NOT NULL,
       participant_count INTEGER NOT NULL,
       common_thoughts TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(date)
     )
   `;
 
-    return new Promise((resolve, reject) => {
+    try {
         // Create conversation summaries table
-        db.run(createConversationTableSQL, (err) => {
-            if (err) {
-                logger.error('Error creating conversation summaries table:', err.message);
-                reject(err);
-            } else {
-                logger.info('Conversation summaries table ready');
+        await pool.query(createConversationTableSQL);
+        logger.info('Conversation summaries table ready');
 
-                // Create feedback table
-                db.run(createFeedbackTableSQL, (err) => {
-                    if (err) {
-                        logger.error('Error creating feedback table:', err.message);
-                        reject(err);
-                    } else {
-                        logger.info('Feedback table ready');
+        // Create feedback table
+        await pool.query(createFeedbackTableSQL);
+        logger.info('Feedback table ready');
 
-                        // Create users table
-                        db.run(createUsersTableSQL, (err) => {
-                            if (err) {
-                                logger.error('Error creating users table:', err.message);
-                                reject(err);
-                            } else {
-                                logger.info('Users table ready');
+        // Create users table
+        await pool.query(createUsersTableSQL);
+        logger.info('Users table ready');
 
-                                // Create mood entries table
-                                db.run(createMoodTableSQL, (err) => {
-                                    if (err) {
-                                        logger.error('Error creating mood entries table:', err.message);
-                                        reject(err);
-                                    } else {
-                                        logger.info('Mood entries table ready');
+        // Create mood entries table
+        await pool.query(createMoodTableSQL);
+        logger.info('Mood entries table ready');
 
-                                        // Create mood stats table
-                                        db.run(createMoodStatsTableSQL, (err) => {
-                                            if (err) {
-                                                logger.error('Error creating mood stats table:', err.message);
-                                                reject(err);
-                                            } else {
-                                                logger.info('Mood stats table ready');
-                                                resolve();
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    });
+        // Create mood stats table
+        await pool.query(createMoodStatsTableSQL);
+        logger.info('Mood stats table ready');
+
+        // Create indexes for better performance
+        await pool.query('CREATE INDEX IF NOT EXISTS idx_conversation_summaries_user_id ON conversation_summaries(user_id)');
+        await pool.query('CREATE INDEX IF NOT EXISTS idx_conversation_summaries_conversation_id ON conversation_summaries(conversation_id)');
+        await pool.query('CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id)');
+        await pool.query('CREATE INDEX IF NOT EXISTS idx_users_auth0_user_id ON users(auth0_user_id)');
+        await pool.query('CREATE INDEX IF NOT EXISTS idx_mood_entries_user_id ON mood_entries(user_id)');
+        await pool.query('CREATE INDEX IF NOT EXISTS idx_mood_entries_created_at ON mood_entries(created_at)');
+        await pool.query('CREATE INDEX IF NOT EXISTS idx_mood_stats_date ON mood_stats(date)');
+
+        logger.info('Database initialization completed successfully');
+    } catch (error) {
+        logger.error('Error initializing database:', error);
+        throw error;
+    }
 }
 
 // Save conversation summary
-function saveConversationSummary(userId, conversationId, summary, messageCount = 0) {
-    return new Promise((resolve, reject) => {
+async function saveConversationSummary(userId, conversationId, summary, messageCount = 0) {
+    try {
         const sql = `
-      INSERT OR REPLACE INTO conversation_summaries 
+      INSERT INTO conversation_summaries 
       (user_id, conversation_id, summary, message_count, updated_at) 
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id, conversation_id) 
+      DO UPDATE SET 
+        summary = EXCLUDED.summary,
+        message_count = EXCLUDED.message_count,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING id
     `;
 
-        db.run(sql, [userId, conversationId, summary, messageCount], function (err) {
-            if (err) {
-                logger.error('Error saving conversation summary:', err.message);
-                reject(err);
-            } else {
-                logger.info(`Saved conversation summary for user ${userId}, conversation ${conversationId}`);
-                resolve(this.lastID);
-            }
-        });
-    });
+        const result = await pool.query(sql, [userId, conversationId, summary, messageCount]);
+        logger.info(`Saved conversation summary for user ${userId}, conversation ${conversationId}`);
+        return result.rows[0].id;
+    } catch (error) {
+        logger.error('Error saving conversation summary:', error);
+        throw error;
+    }
 }
 
 // Get conversation summary by user and conversation ID
-function getConversationSummary(userId, conversationId) {
-    return new Promise((resolve, reject) => {
+async function getConversationSummary(userId, conversationId) {
+    try {
         const sql = `
       SELECT * FROM conversation_summaries 
-      WHERE user_id = ? AND conversation_id = ?
+      WHERE user_id = $1 AND conversation_id = $2
     `;
 
-        db.get(sql, [userId, conversationId], (err, row) => {
-            if (err) {
-                logger.error('Error getting conversation summary:', err.message);
-                reject(err);
-            } else {
-                resolve(row);
-            }
-        });
-    });
+        const result = await pool.query(sql, [userId, conversationId]);
+        return result.rows[0] || null;
+    } catch (error) {
+        logger.error('Error getting conversation summary:', error);
+        throw error;
+    }
 }
 
 // Get all conversation summaries for a user
-function getUserConversationSummaries(userId) {
-    return new Promise((resolve, reject) => {
+async function getUserConversationSummaries(userId) {
+    try {
         const sql = `
       SELECT * FROM conversation_summaries 
-      WHERE user_id = ? 
+      WHERE user_id = $1 
       ORDER BY updated_at DESC
     `;
 
-        db.all(sql, [userId], (err, rows) => {
-            if (err) {
-                logger.error('Error getting user conversation summaries:', err.message);
-                reject(err);
-            } else {
-                resolve(rows);
-            }
-        });
-    });
+        const result = await pool.query(sql, [userId]);
+        return result.rows;
+    } catch (error) {
+        logger.error('Error getting user conversation summaries:', error);
+        throw error;
+    }
 }
 
 // Delete conversation summary
-function deleteConversationSummary(userId, conversationId) {
-    return new Promise((resolve, reject) => {
+async function deleteConversationSummary(userId, conversationId) {
+    try {
         const sql = `
       DELETE FROM conversation_summaries 
-      WHERE user_id = ? AND conversation_id = ?
+      WHERE user_id = $1 AND conversation_id = $2
     `;
 
-        db.run(sql, [userId, conversationId], function (err) {
-            if (err) {
-                logger.error('Error deleting conversation summary:', err.message);
-                reject(err);
-            } else {
-                logger.info(`Deleted conversation summary for user ${userId}, conversation ${conversationId}`);
-                resolve(this.changes);
-            }
-        });
-    });
+        const result = await pool.query(sql, [userId, conversationId]);
+        logger.info(`Deleted conversation summary for user ${userId}, conversation ${conversationId}`);
+        return result.rowCount > 0;
+    } catch (error) {
+        logger.error('Error deleting conversation summary:', error);
+        throw error;
+    }
 }
 
 // Update conversation summary
-function updateConversationSummary(userId, conversationId, summary, messageCount) {
-    return new Promise((resolve, reject) => {
+async function updateConversationSummary(userId, conversationId, summary, messageCount) {
+    try {
         const sql = `
       UPDATE conversation_summaries 
-      SET summary = ?, message_count = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = ? AND conversation_id = ?
+      SET summary = $3, message_count = $4, updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = $1 AND conversation_id = $2
+      RETURNING id
     `;
 
-        db.run(sql, [summary, messageCount, userId, conversationId], function (err) {
-            if (err) {
-                logger.error('Error updating conversation summary:', err.message);
-                reject(err);
-            } else {
-                logger.info(`Updated conversation summary for user ${userId}, conversation ${conversationId}`);
-                resolve(this.changes);
-            }
-        });
-    });
+        const result = await pool.query(sql, [userId, conversationId, summary, messageCount]);
+        if (result.rowCount > 0) {
+            logger.info(`Updated conversation summary for user ${userId}, conversation ${conversationId}`);
+            return result.rows[0].id;
+        } else {
+            throw new Error('Conversation summary not found');
+        }
+    } catch (error) {
+        logger.error('Error updating conversation summary:', error);
+        throw error;
+    }
 }
 
 // Get conversation count for a user
-function getUserConversationCount(userId) {
-    return new Promise((resolve, reject) => {
+async function getUserConversationCount(userId) {
+    try {
         const sql = `
       SELECT COUNT(*) as count FROM conversation_summaries 
-      WHERE user_id = ?
+      WHERE user_id = $1
     `;
 
-        db.get(sql, [userId], (err, row) => {
-            if (err) {
-                logger.error('Error getting user conversation count:', err.message);
-                reject(err);
-            } else {
-                resolve(row ? row.count : 0);
-            }
-        });
-    });
+        const result = await pool.query(sql, [userId]);
+        return parseInt(result.rows[0].count);
+    } catch (error) {
+        logger.error('Error getting user conversation count:', error);
+        throw error;
+    }
 }
 
-// Delete old conversations (older than specified days)
-function deleteOldConversations(daysOld = 30) {
-    return new Promise((resolve, reject) => {
+// Delete old conversations
+async function deleteOldConversations(daysOld = 30) {
+    try {
         const sql = `
       DELETE FROM conversation_summaries 
-      WHERE updated_at < datetime('now', '-${daysOld} days')
+      WHERE updated_at < CURRENT_TIMESTAMP - INTERVAL '${daysOld} days'
     `;
 
-        db.run(sql, function (err) {
-            if (err) {
-                logger.error('Error deleting old conversations:', err.message);
-                reject(err);
-            } else {
-                logger.info(`Deleted ${this.changes} old conversations (older than ${daysOld} days)`);
-                resolve(this.changes);
-            }
-        });
-    });
+        const result = await pool.query(sql);
+        logger.info(`Deleted ${result.rowCount} old conversations (older than ${daysOld} days)`);
+        return result.rowCount;
+    } catch (error) {
+        logger.error('Error deleting old conversations:', error);
+        throw error;
+    }
 }
 
 // Get conversation statistics
-function getConversationStats() {
-    return new Promise((resolve, reject) => {
+async function getConversationStats() {
+    try {
         const sql = `
       SELECT 
         COUNT(*) as total_conversations,
         COUNT(DISTINCT user_id) as unique_users,
-        AVG(message_count) as avg_message_count,
-        MAX(created_at) as latest_conversation,
-        MIN(created_at) as earliest_conversation
+        AVG(message_count) as avg_messages_per_conversation,
+        MAX(created_at) as latest_conversation
       FROM conversation_summaries
     `;
 
-        db.get(sql, (err, row) => {
-            if (err) {
-                logger.error('Error getting conversation stats:', err.message);
-                reject(err);
-            } else {
-                resolve(row);
-            }
-        });
-    });
+        const result = await pool.query(sql);
+        return result.rows[0];
+    } catch (error) {
+        logger.error('Error getting conversation stats:', error);
+        throw error;
+    }
 }
 
-// Generate a unique conversation ID
+// Generate conversation ID
 function generateConversationId() {
-    return `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// V2: Generate conversation summary using LLM
+// Generate conversation summary using AI
 async function generateConversationSummaryV2(messages, assistantResponse, provider = 'ollama') {
     try {
-        // Create a comprehensive conversation context
-        const conversationText = messages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
-        const fullConversation = `${conversationText}\nassistant: ${assistantResponse}`;
+        const lastUserMessage = messages[messages.length - 1]?.content || '';
+        const messageCount = messages.length;
 
-        // Create a summary prompt
-        const summaryPrompt = `Please analyze the user's personality based on the Big Five personality traits (Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism) from this conversation. Provide a concise summary in only 10 words focusing on the user's personality characteristics, communication style, and behavioral patterns:
-
-${fullConversation}
-
-Personality Summary:`;
-
-        let summary = '';
-
-        if (provider === 'bedrock') {
-            summary = await generateSummaryWithBedrock(summaryPrompt);
-        } else if (provider === 'ollama') {
-            summary = await generateSummaryWithOllama(summaryPrompt);
-        } else {
-            // Fallback to simple summary
-            summary = generateSimpleSummary(messages, assistantResponse);
+        let summary;
+        switch (provider) {
+            case 'bedrock':
+                summary = await generateSummaryWithBedrock(lastUserMessage, assistantResponse);
+                break;
+            case 'ollama':
+                summary = await generateSummaryWithOllama(lastUserMessage, assistantResponse);
+                break;
+            case 'together':
+                summary = await generateSummaryWithTogether(lastUserMessage, assistantResponse);
+                break;
+            default:
+                summary = generateSimpleSummary(messages, assistantResponse);
         }
 
-        return summary;
+        return {
+            summary,
+            messageCount,
+            provider
+        };
     } catch (error) {
-        logger.error('Error generating LLM summary:', error);
-        // Fallback to simple summary if LLM fails
-        return generateSimpleSummary(messages, assistantResponse);
+        logger.error('Error generating conversation summary:', error);
+        // Fallback to simple summary
+        return {
+            summary: generateSimpleSummary(messages, assistantResponse),
+            messageCount: messages.length,
+            provider: 'simple'
+        };
     }
 }
 
 // Generate summary using AWS Bedrock
-async function generateSummaryWithBedrock(prompt) {
-    try {
-        const client = new BedrockRuntimeClient({
-            region: process.env.AWS_REGION,
-            credentials: {
-                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-            }
-        });
+async function generateSummaryWithBedrock(lastUserMessage, assistantResponse) {
+    const client = new BedrockRuntimeClient({
+        region: process.env.AWS_REGION,
+        credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        }
+    });
 
-        const body = {
-            prompt: `<|begin_of_text|><|start_header_id|>system<|end_header_id|>\nYou are a helpful assistant that creates concise summaries of conversations.\n<|eot_id|><|start_header_id|>user<|end_header_id|>\n${prompt}\n<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n`,
-            max_gen_len: 150,
-            temperature: 0.3,
-            top_p: 0.9
-        };
+    const prompt = `Summarize this conversation in 2-3 sentences:
 
-        const command = new InvokeModelCommand({
-            modelId: process.env.BEDROCK_MODEL_ID,
-            contentType: 'application/json',
-            body: JSON.stringify(body),
-        });
+User: ${lastUserMessage}
+Assistant: ${assistantResponse}
 
-        const response = await client.send(command);
-        const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-        return responseBody.generation.trim();
-    } catch (error) {
-        logger.error('Error generating Bedrock summary:', error);
-        throw error;
-    }
+Summary:`;
+
+    const command = new InvokeModelCommand({
+        modelId: process.env.BEDROCK_MODEL_ID,
+        contentType: 'application/json',
+        body: JSON.stringify({
+            prompt: prompt,
+            max_tokens: 150,
+            temperature: 0.7
+        })
+    });
+
+    const response = await client.send(command);
+    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+    return responseBody.completion || responseBody.generations?.[0]?.text || 'Conversation summary';
 }
 
 // Generate summary using Ollama
-async function generateSummaryWithOllama(prompt) {
+async function generateSummaryWithOllama(lastUserMessage, assistantResponse) {
+    const model = process.env.OLLAMA_MODEL || 'llama3';
+    const prompt = `Summarize this conversation in 2-3 sentences:
+
+User: ${lastUserMessage}
+Assistant: ${assistantResponse}
+
+Summary:`;
+
+    const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: model,
+            prompt: prompt,
+            stream: false
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.response || 'Conversation summary';
+}
+
+// Generate summary using Together AI
+async function generateSummaryWithTogether(lastUserMessage, assistantResponse) {
+    const prompt = `Summarize this conversation in 2-3 sentences:
+
+User: ${lastUserMessage}
+Assistant: ${assistantResponse}
+
+Summary:`;
+
+    const response = await fetch('https://api.together.xyz/v1/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.TOGETHER_API_KEY}`
+        },
+        body: JSON.stringify({
+            model: 'meta-llama/Llama-2-7b-chat-hf',
+            prompt: prompt,
+            max_tokens: 150,
+            temperature: 0.7
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Together AI API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.text || 'Conversation summary';
+}
+
+// Generate simple summary (fallback)
+function generateSimpleSummary(messages, assistantResponse) {
+    const lastUserMessage = messages[messages.length - 1]?.content || '';
+    return lastUserMessage.length > 100 ? lastUserMessage.substring(0, 100) + '...' : lastUserMessage;
+}
+
+// Save feedback
+async function saveFeedback(userId, feedbackText) {
     try {
-        const model = process.env.OLLAMA_MODEL || 'llama3';
-        const ollamaBody = {
-            model,
-            prompt,
-            stream: false,
-            options: {
-                num_predict: 150,
-                temperature: 0.3
-            }
-        };
+        const sql = `
+      INSERT INTO feedback (user_id, feedback_text)
+      VALUES ($1, $2)
+      RETURNING id
+    `;
 
-        const response = await fetch('http://localhost:11434/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(ollamaBody)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Ollama API error: ${errorText}`);
-        }
-
-        const data = await response.json();
-        return data.response.trim();
+        const result = await pool.query(sql, [userId, feedbackText]);
+        logger.info(`Saved feedback for user ${userId}`);
+        return result.rows[0].id;
     } catch (error) {
-        logger.error('Error generating Ollama summary:', error);
+        logger.error('Error saving feedback:', error);
         throw error;
     }
 }
 
-// Fallback simple summary function (original logic)
-function generateSimpleSummary(messages, assistantResponse) {
-    const userMessages = messages.filter(msg => msg.role === 'user');
-    const lastUserMessage = userMessages[userMessages.length - 1];
+// Get user feedback
+async function getUserFeedback(userId) {
+    try {
+        const sql = `
+      SELECT * FROM feedback 
+      WHERE user_id = $1 
+      ORDER BY created_at DESC
+    `;
 
-    if (lastUserMessage) {
-        const summary = lastUserMessage.content.length > 100
-            ? lastUserMessage.content.substring(0, 100) + '...'
-            : lastUserMessage.content;
-        return summary;
+        const result = await pool.query(sql, [userId]);
+        return result.rows;
+    } catch (error) {
+        logger.error('Error getting user feedback:', error);
+        throw error;
     }
-
-    return 'Conversation started';
 }
 
-// Save feedback
-function saveFeedback(userId, feedbackText) {
-    return new Promise((resolve, reject) => {
-        const sql = `
-      INSERT INTO feedback (user_id, feedback_text) 
-      VALUES (?, ?)
-    `;
-
-        db.run(sql, [userId, feedbackText], function (err) {
-            if (err) {
-                logger.error('Error saving feedback:', err.message);
-                reject(err);
-            } else {
-                logger.info(`Saved feedback for user ${userId}`);
-                resolve(this.lastID);
-            }
-        });
-    });
-}
-
-// Get all feedback for a user
-function getUserFeedback(userId) {
-    return new Promise((resolve, reject) => {
-        const sql = `
-      SELECT * FROM feedback 
-      WHERE user_id = ? 
-      ORDER BY created_at DESC
-    `;
-
-        db.all(sql, [userId], (err, rows) => {
-            if (err) {
-                logger.error('Error getting user feedback:', err.message);
-                reject(err);
-            } else {
-                resolve(rows);
-            }
-        });
-    });
-}
-
-// Get all feedback (admin function)
-function getAllFeedback() {
-    return new Promise((resolve, reject) => {
+// Get all feedback
+async function getAllFeedback() {
+    try {
         const sql = `
       SELECT * FROM feedback 
       ORDER BY created_at DESC
     `;
 
-        db.all(sql, (err, rows) => {
-            if (err) {
-                logger.error('Error getting all feedback:', err.message);
-                reject(err);
-            } else {
-                resolve(rows);
-            }
-        });
-    });
+        const result = await pool.query(sql);
+        return result.rows;
+    } catch (error) {
+        logger.error('Error getting all feedback:', error);
+        throw error;
+    }
 }
 
 // Get feedback statistics
-function getFeedbackStats() {
-    return new Promise((resolve, reject) => {
+async function getFeedbackStats() {
+    try {
         const sql = `
       SELECT 
         COUNT(*) as total_feedback,
         COUNT(DISTINCT user_id) as unique_users,
-        MAX(created_at) as latest_feedback,
-        MIN(created_at) as earliest_feedback
+        MAX(created_at) as latest_feedback
       FROM feedback
     `;
 
-        db.get(sql, (err, row) => {
-            if (err) {
-                logger.error('Error getting feedback stats:', err.message);
-                reject(err);
-            } else {
-                resolve(row);
-            }
-        });
-    });
+        const result = await pool.query(sql);
+        return result.rows[0];
+    } catch (error) {
+        logger.error('Error getting feedback stats:', error);
+        throw error;
+    }
 }
 
-// Check if user exists in the users table
-function getUserByAuth0Id(auth0UserId) {
-    return new Promise((resolve, reject) => {
+// Get user by Auth0 ID
+async function getUserByAuth0Id(auth0UserId) {
+    try {
         const sql = `
       SELECT * FROM users 
-      WHERE auth0_user_id = ?
+      WHERE auth0_user_id = $1
     `;
 
-        db.get(sql, [auth0UserId], (err, row) => {
-            if (err) {
-                logger.error('Error getting user by Auth0 ID:', err.message);
-                reject(err);
-            } else {
-                resolve(row);
-            }
-        });
-    });
+        const result = await pool.query(sql, [auth0UserId]);
+        return result.rows[0] || null;
+    } catch (error) {
+        logger.error('Error getting user by Auth0 ID:', error);
+        throw error;
+    }
 }
 
-// Create a new user
-function createUser(auth0UserId, nickname, avatar = null) {
-    return new Promise((resolve, reject) => {
+// Create user
+async function createUser(auth0UserId, nickname, avatar = null) {
+    try {
         const sql = `
-      INSERT INTO users (auth0_user_id, nickname, avatar, created_at, updated_at)
-      VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO users (auth0_user_id, nickname, avatar)
+      VALUES ($1, $2, $3)
+      RETURNING *
     `;
 
-        db.run(sql, [auth0UserId, nickname, avatar], function (err) {
-            if (err) {
-                logger.error('Error creating user:', err.message);
-                reject(err);
-            } else {
-                logger.info(`Created user with Auth0 ID ${auth0UserId}`);
-                resolve(this.lastID);
-            }
-        });
-    });
+        const result = await pool.query(sql, [auth0UserId, nickname, avatar]);
+        logger.info(`Created user with Auth0 ID: ${auth0UserId}`);
+        return result.rows[0];
+    } catch (error) {
+        logger.error('Error creating user:', error);
+        throw error;
+    }
 }
 
-// Update user information
-function updateUser(auth0UserId, nickname, avatar = null) {
-    return new Promise((resolve, reject) => {
+// Update user
+async function updateUser(auth0UserId, nickname, avatar = null) {
+    try {
         const sql = `
       UPDATE users 
-      SET nickname = ?, avatar = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE auth0_user_id = ?
+      SET nickname = $2, avatar = $3, updated_at = CURRENT_TIMESTAMP
+      WHERE auth0_user_id = $1
+      RETURNING *
     `;
 
-        db.run(sql, [nickname, avatar, auth0UserId], function (err) {
-            if (err) {
-                logger.error('Error updating user:', err.message);
-                reject(err);
-            } else {
-                logger.info(`Updated user with Auth0 ID ${auth0UserId}`);
-                resolve(this.changes);
-            }
-        });
-    });
+        const result = await pool.query(sql, [auth0UserId, nickname, avatar]);
+        if (result.rowCount > 0) {
+            logger.info(`Updated user with Auth0 ID: ${auth0UserId}`);
+            return result.rows[0];
+        } else {
+            throw new Error('User not found');
+        }
+    } catch (error) {
+        logger.error('Error updating user:', error);
+        throw error;
+    }
 }
 
 // Close database connection
-function closeDatabase() {
-    db.close((err) => {
-        if (err) {
-            logger.error('Error closing database:', err.message);
-        } else {
-            logger.info('Database connection closed');
-        }
-    });
+async function closeDatabase() {
+    try {
+        await pool.end();
+        logger.info('Database connection closed');
+    } catch (error) {
+        logger.error('Error closing database connection:', error);
+        throw error;
+    }
 }
 
-// Utility function to validate base64 image data
+// Validate base64 image
 function validateBase64Image(base64Data) {
-    if (!base64Data || typeof base64Data !== 'string') {
-        return { valid: false, error: 'Invalid data format' };
+    try {
+        // Check if it's a valid base64 string
+        if (!base64Data || typeof base64Data !== 'string') {
+            return false;
+        }
+
+        // Check if it starts with data:image/
+        if (!base64Data.startsWith('data:image/')) {
+            return false;
+        }
+
+        // Extract the base64 part
+        const base64Part = base64Data.split(',')[1];
+        if (!base64Part) {
+            return false;
+        }
+
+        // Check if it's valid base64
+        const buffer = Buffer.from(base64Part, 'base64');
+        return buffer.length > 0;
+    } catch (error) {
+        return false;
     }
-
-    if (!base64Data.startsWith('data:image/')) {
-        return { valid: false, error: 'Not a valid image data URL' };
-    }
-
-    // Check file size (base64 is ~33% larger than binary)
-    const base64String = base64Data.split(',')[1];
-    if (!base64String) {
-        return { valid: false, error: 'Invalid base64 data' };
-    }
-
-    const sizeInBytes = Math.ceil((base64String.length * 3) / 4);
-    const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
-
-    if (sizeInBytes > maxSizeInBytes) {
-        return { valid: false, error: 'File size exceeds 5MB limit' };
-    }
-
-    return { valid: true, size: sizeInBytes };
 }
 
 // Save mood entry
-function saveMoodEntry(userId, moodScore, thoughts = null) {
-    return new Promise((resolve, reject) => {
+async function saveMoodEntry(userId, moodScore, thoughts = null) {
+    try {
         const sql = `
-      INSERT INTO mood_entries (user_id, mood_score, thoughts, created_at, updated_at)
-      VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO mood_entries (user_id, mood_score, thoughts)
+      VALUES ($1, $2, $3)
+      RETURNING id
     `;
 
-        db.run(sql, [userId, moodScore, thoughts], function (err) {
-            if (err) {
-                logger.error('Error saving mood entry:', err.message);
-                reject(err);
-            } else {
-                logger.info(`Saved mood entry for user ${userId} with score ${moodScore}`);
-                resolve(this.lastID);
-            }
-        });
-    });
+        const result = await pool.query(sql, [userId, moodScore, thoughts]);
+        logger.info(`Saved mood entry for user ${userId}: ${moodScore}/5`);
+        return result.rows[0].id;
+    } catch (error) {
+        logger.error('Error saving mood entry:', error);
+        throw error;
+    }
 }
 
-// Get user's mood entries
-function getUserMoodEntries(userId, limit = 30) {
-    return new Promise((resolve, reject) => {
+// Get user mood entries
+async function getUserMoodEntries(userId, limit = 30) {
+    try {
         const sql = `
       SELECT * FROM mood_entries 
-      WHERE user_id = ? 
+      WHERE user_id = $1 
       ORDER BY created_at DESC 
-      LIMIT ?
+      LIMIT $2
     `;
 
-        db.all(sql, [userId, limit], (err, rows) => {
-            if (err) {
-                logger.error('Error getting user mood entries:', err.message);
-                reject(err);
-            } else {
-                resolve(rows);
-            }
-        });
-    });
+        const result = await pool.query(sql, [userId, limit]);
+        return result.rows;
+    } catch (error) {
+        logger.error('Error getting user mood entries:', error);
+        throw error;
+    }
 }
 
-// Get user's mood statistics
-function getUserMoodStats(userId) {
-    return new Promise((resolve, reject) => {
+// Get user mood statistics
+async function getUserMoodStats(userId) {
+    try {
         const sql = `
       SELECT 
         COUNT(*) as total_entries,
-        AVG(mood_score) as avg_mood,
-        MIN(mood_score) as min_mood,
-        MAX(mood_score) as max_mood,
-        COUNT(DISTINCT DATE(created_at)) as days_with_entries
+        AVG(mood_score) as average_mood,
+        MIN(mood_score) as lowest_mood,
+        MAX(mood_score) as highest_mood,
+        COUNT(CASE WHEN mood_score >= 4 THEN 1 END) as good_days,
+        COUNT(CASE WHEN mood_score <= 2 THEN 1 END) as bad_days
       FROM mood_entries 
-      WHERE user_id = ?
+      WHERE user_id = $1
     `;
 
-        db.get(sql, [userId], (err, row) => {
-            if (err) {
-                logger.error('Error getting user mood stats:', err.message);
-                reject(err);
-            } else {
-                resolve(row);
-            }
-        });
-    });
+        const result = await pool.query(sql, [userId]);
+        return result.rows[0];
+    } catch (error) {
+        logger.error('Error getting user mood stats:', error);
+        throw error;
+    }
 }
 
-// Get camp-wide mood data for a specific date range
-function getCampMoodData(startDate = null, endDate = null) {
-    return new Promise((resolve, reject) => {
+// Get camp mood data
+async function getCampMoodData(startDate = null, endDate = null) {
+    try {
         let sql = `
       SELECT 
         DATE(created_at) as date,
         AVG(mood_score) as avg_mood,
-        COUNT(DISTINCT user_id) as participant_count,
-        GROUP_CONCAT(DISTINCT thoughts) as thoughts
-      FROM mood_entries 
+        COUNT(*) as participant_count,
+        STRING_AGG(DISTINCT thoughts, ' | ') as common_thoughts
+      FROM mood_entries
     `;
 
         const params = [];
         if (startDate && endDate) {
-            sql += ` WHERE DATE(created_at) BETWEEN ? AND ?`;
+            sql += ` WHERE DATE(created_at) BETWEEN $1 AND $2`;
             params.push(startDate, endDate);
+        } else if (startDate) {
+            sql += ` WHERE DATE(created_at) >= $1`;
+            params.push(startDate);
         }
 
-        sql += ` GROUP BY DATE(created_at) ORDER BY date DESC LIMIT 14`;
+        sql += `
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC
+    `;
 
-        db.all(sql, params, (err, rows) => {
-            if (err) {
-                logger.error('Error getting camp mood data:', err.message);
-                reject(err);
-            } else {
-                resolve(rows);
-            }
-        });
-    });
+        const result = await pool.query(sql, params);
+        return result.rows;
+    } catch (error) {
+        logger.error('Error getting camp mood data:', error);
+        throw error;
+    }
 }
 
-// Get today's camp mood summary
-function getTodayCampMood() {
-    return new Promise((resolve, reject) => {
+// Get today's camp mood
+async function getTodayCampMood() {
+    try {
         const sql = `
       SELECT 
         AVG(mood_score) as avg_mood,
-        COUNT(DISTINCT user_id) as participant_count
+        COUNT(*) as participant_count,
+        COUNT(DISTINCT user_id) as unique_participants,
+        STRING_AGG(DISTINCT thoughts, ' | ') as common_thoughts
       FROM mood_entries 
-      WHERE DATE(created_at) = DATE('now')
+      WHERE DATE(created_at) = CURRENT_DATE
     `;
 
-        db.get(sql, [], (err, row) => {
-            if (err) {
-                logger.error('Error getting today\'s camp mood:', err.message);
-                reject(err);
-            } else {
-                resolve(row);
-            }
-        });
-    });
+        const result = await pool.query(sql);
+        return result.rows[0];
+    } catch (error) {
+        logger.error('Error getting today\'s camp mood:', error);
+        throw error;
+    }
 }
 
 // Get overall camp mood statistics
-function getOverallCampMoodStats() {
-    return new Promise((resolve, reject) => {
+async function getOverallCampMoodStats() {
+    try {
         const sql = `
       SELECT 
-        COUNT(DISTINCT user_id) as total_participants,
-        AVG(mood_score) as overall_avg_mood,
         COUNT(*) as total_entries,
-        COUNT(DISTINCT DATE(created_at)) as total_days
+        COUNT(DISTINCT user_id) as unique_participants,
+        AVG(mood_score) as overall_avg_mood,
+        MIN(mood_score) as lowest_mood,
+        MAX(mood_score) as highest_mood,
+        COUNT(CASE WHEN mood_score >= 4 THEN 1 END) as good_days,
+        COUNT(CASE WHEN mood_score <= 2 THEN 1 END) as bad_days
       FROM mood_entries
     `;
 
-        db.get(sql, [], (err, row) => {
-            if (err) {
-                logger.error('Error getting overall camp mood stats:', err.message);
-                reject(err);
-            } else {
-                resolve(row);
-            }
-        });
-    });
+        const result = await pool.query(sql);
+        return result.rows[0];
+    } catch (error) {
+        logger.error('Error getting overall camp mood stats:', error);
+        throw error;
+    }
 }
 
-// Get all participants' mood entries with user information
-function getAllParticipantsMoodEntries(startDate = null, endDate = null) {
-    return new Promise((resolve, reject) => {
+// Get all participants' mood entries
+async function getAllParticipantsMoodEntries(startDate = null, endDate = null) {
+    try {
         let sql = `
       SELECT 
-        me.id,
-        me.user_id,
-        me.mood_score,
-        me.thoughts,
-        me.created_at,
-        u.nickname,
-        u.avatar
+        me.*,
+        u.nickname
       FROM mood_entries me
       LEFT JOIN users u ON me.user_id = u.auth0_user_id
     `;
 
         const params = [];
         if (startDate && endDate) {
-            sql += ` WHERE DATE(me.created_at) BETWEEN ? AND ?`;
+            sql += ` WHERE DATE(me.created_at) BETWEEN $1 AND $2`;
             params.push(startDate, endDate);
+        } else if (startDate) {
+            sql += ` WHERE DATE(me.created_at) >= $1`;
+            params.push(startDate);
         }
 
-        sql += ` ORDER BY me.created_at DESC, u.nickname`;
+        sql += ` ORDER BY me.created_at DESC`;
 
-        db.all(sql, params, (err, rows) => {
-            if (err) {
-                logger.error('Error getting all participants mood entries:', err.message);
-                reject(err);
-            } else {
-                resolve(rows);
-            }
-        });
-    });
+        const result = await pool.query(sql, params);
+        return result.rows;
+    } catch (error) {
+        logger.error('Error getting all participants mood entries:', error);
+        throw error;
+    }
 }
 
-// Get participants' mood entries grouped by date
-function getParticipantsMoodByDate(startDate = null, endDate = null) {
-    return new Promise((resolve, reject) => {
+// Get participants mood by date
+async function getParticipantsMoodByDate(startDate = null, endDate = null) {
+    try {
         let sql = `
       SELECT 
         DATE(me.created_at) as date,
         me.user_id,
-        me.mood_score,
-        me.thoughts,
-        me.created_at,
         u.nickname,
-        u.avatar
+        me.mood_score,
+        me.thoughts
       FROM mood_entries me
       LEFT JOIN users u ON me.user_id = u.auth0_user_id
     `;
 
         const params = [];
         if (startDate && endDate) {
-            sql += ` WHERE DATE(me.created_at) BETWEEN ? AND ?`;
+            sql += ` WHERE DATE(me.created_at) BETWEEN $1 AND $2`;
             params.push(startDate, endDate);
+        } else if (startDate) {
+            sql += ` WHERE DATE(me.created_at) >= $1`;
+            params.push(startDate);
         }
 
-        sql += ` ORDER BY me.created_at DESC, u.nickname`;
+        sql += ` ORDER BY date DESC, me.created_at DESC`;
 
-        db.all(sql, params, (err, rows) => {
-            if (err) {
-                logger.error('Error getting participants mood by date:', err.message);
-                reject(err);
-            } else {
-                // Group by date
-                const groupedData = {};
-                rows.forEach(row => {
-                    const date = row.date;
-                    if (!groupedData[date]) {
-                        groupedData[date] = [];
-                    }
-                    groupedData[date].push(row);
-                });
-                resolve(groupedData);
-            }
-        });
-    });
+        const result = await pool.query(sql, params);
+        return result.rows;
+    } catch (error) {
+        logger.error('Error getting participants mood by date:', error);
+        throw error;
+    }
 }
 
 module.exports = {
-    db,
-    initializeDatabase,
     saveConversationSummary,
     getConversationSummary,
     getUserConversationSummaries,
@@ -828,9 +793,6 @@ module.exports = {
     getConversationStats,
     generateConversationId,
     generateConversationSummaryV2,
-    generateSummaryWithBedrock,
-    generateSummaryWithOllama,
-    generateSimpleSummary,
     saveFeedback,
     getUserFeedback,
     getAllFeedback,
@@ -838,6 +800,7 @@ module.exports = {
     getUserByAuth0Id,
     createUser,
     updateUser,
+    closeDatabase,
     validateBase64Image,
     saveMoodEntry,
     getUserMoodEntries,
@@ -847,5 +810,5 @@ module.exports = {
     getOverallCampMoodStats,
     getAllParticipantsMoodEntries,
     getParticipantsMoodByDate,
-    closeDatabase
+    pool
 }; 

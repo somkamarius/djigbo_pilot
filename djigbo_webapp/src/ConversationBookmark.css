@@ -242,15 +242,7 @@
 }
 
 /* Responsive design */
-@media (max-width: 1200px) {
-    .conversation-bookmark {
-        left: 20px;
-        top: 180px;
-        width: 250px;
-    }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .conversation-bookmark {
         position: fixed;
         left: 50%;
@@ -259,6 +251,7 @@
         width: 80px;
         height: 50px;
         border-radius: 8px;
+        z-index: 101;
     }
 
     .conversation-bookmark:hover {
@@ -290,6 +283,8 @@
         display: none;
     }
 }
+
+
 
 @media (max-width: 480px) {
     .conversation-bookmark {
@@ -433,14 +428,7 @@
     transition: margin-right 0.3s ease;
 }
 
-@media (max-width: 1200px) {
-    .main-content-area {
-        margin-right: 100px;
-        padding-top: 30px;
-    }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .main-content-area {
         margin-right: 0px;
         padding-top: 80px;

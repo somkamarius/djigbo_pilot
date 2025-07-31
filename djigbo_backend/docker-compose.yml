@@ -1,5 +1,18 @@
 version: '3.7'
 services:
+  postgres:
+    image: 'postgres:15'
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: djigbo_db
+      POSTGRES_USER: username
+      POSTGRES_PASSWORD: password
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - elasticsearch-kibana-node-js-logging
   elasticsearch:
     image: 'docker.elastic.co/elasticsearch/elasticsearch:8.10.2'
     container_name: elasticsearch-logging
@@ -31,11 +44,22 @@ services:
     restart: unless-stopped
     ports:
       - '3002:8000'
+    environment:
+      - DATABASE_URL=postgresql://username:password@postgres:5432/djigbo_db
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=djigbo_db
+      - DB_USER=username
+      - DB_PASSWORD=password
+    depends_on:
+      - postgres
     stdin_open: true
     tty: true
     networks:
       - elasticsearch-kibana-node-js-logging
 volumes:
+  postgres_data:
+    driver: local
   data_es:
     driver: local
 networks:

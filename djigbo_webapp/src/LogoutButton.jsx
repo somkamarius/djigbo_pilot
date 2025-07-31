@@ -1,26 +1,22 @@
-import { useAuth0 } from '@auth0/auth0-react';
+import { useNavigate } from 'react-router-dom';
 import './LogoutButton.css';
 
 const LogoutButton = () => {
-    const { logout } = useAuth0();
+    const navigate = useNavigate();
 
-    const handleLogout = () => {
-        logout({
-            logoutParams: {
-                returnTo: window.location.origin
-            }
-        });
+    const handleProfileClick = () => {
+        navigate('/profile');
     };
 
     return (
-        <button onClick={handleLogout} className="logout-button">
+        <button onClick={handleProfileClick} className="logout-button">
             <div className="logout-button-header">
                 <div className="logout-button-icon">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                     </svg>
                 </div>
-                <span className="logout-button-title">Logout</span>
+                <span className="logout-button-title">Profile</span>
                 <div className="logout-button-indicator">→</div>
             </div>
         </button>

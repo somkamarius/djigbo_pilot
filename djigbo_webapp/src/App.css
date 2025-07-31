@@ -310,11 +310,27 @@ p {
   }
 }
 
-@media (max-width: 700px) {
+/* Mobile navigation - top bar layout */
+@media (max-width: 900px) {
   .circle-nav {
     flex-direction: column;
     gap: 2rem;
     max-width: 98vw;
+  }
+
+  /* Sticky header banner for mobile navigation */
+  .App::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: var(--accent);
+    border-bottom: 1px solid var(--journal-border);
+    box-shadow: 0 2px 12px rgba(166, 138, 100, 0.15);
+    z-index: 100;
+    pointer-events: none;
   }
 }
 

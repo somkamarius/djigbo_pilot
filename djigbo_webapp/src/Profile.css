@@ -1,0 +1,456 @@
+.profile-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 16px auto;
+    padding: 1.5rem 2vw 1rem 2vw;
+    min-height: 60vh;
+    background: var(--accent);
+}
+
+.profile-card {
+    background: var(--journal-bg);
+    border-radius: 12px;
+    box-shadow: var(--journal-shadow-deep);
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid var(--journal-border);
+}
+
+.profile-header {
+    background: var(--gradient-main);
+    color: var(--text);
+    padding: 2rem 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    border-bottom: 1px solid var(--journal-border);
+}
+
+.avatar-section {
+    flex-shrink: 0;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid var(--primary-dark);
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(166, 138, 100, 0.2);
+}
+
+.profile-avatar-placeholder {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid var(--primary-dark);
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: bold;
+    color: var(--text);
+    box-shadow: 0 4px 12px rgba(166, 138, 100, 0.2);
+}
+
+.profile-info h2 {
+    margin: 0 0 8px 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    letter-spacing: -0.02em;
+    text-align: left;
+}
+
+.user-email {
+    margin: 0 0 8px 0;
+    color: var(--text-light);
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: left;
+}
+
+.member-since {
+    margin: 0;
+    color: var(--journal-text-light);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: left;
+}
+
+.profile-sections {
+    padding: 2rem 2.5rem;
+    background: var(--journal-paper);
+}
+
+.profile-section {
+    margin-bottom: 2.5rem;
+}
+
+.profile-section:last-child {
+    margin-bottom: 0;
+}
+
+.profile-section h3 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+    border-bottom: 2px solid var(--journal-border);
+    padding-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background: var(--journal-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--journal-border);
+    transition: all 0.3s ease;
+    box-shadow: var(--journal-shadow);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--journal-shadow-deep);
+    border-color: var(--primary-dark);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 0.5rem;
+}
+
+.stat-date {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--journal-text-light);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mood-stats {
+    background: var(--journal-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    border: 1px solid var(--journal-border);
+    box-shadow: var(--journal-shadow);
+}
+
+.mood-overview {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.current-mood {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.mood-emoji {
+    font-size: 3rem;
+}
+
+.mood-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.mood-score {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.mood-label {
+    font-size: 0.9rem;
+    color: var(--journal-text-light);
+    font-weight: 500;
+}
+
+.mood-metrics {
+    display: flex;
+    gap: 2rem;
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.metric-number {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.metric-label {
+    font-size: 0.8rem;
+    color: var(--journal-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.recent-moods h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+.mood-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mood-entry {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--journal-paper);
+    border-radius: 6px;
+    border: 1px solid var(--journal-border);
+    transition: all 0.2s ease;
+}
+
+.mood-entry:hover {
+    background: var(--journal-bg);
+    border-color: var(--primary-dark);
+}
+
+.mood-emoji-small {
+    font-size: 1.5rem;
+}
+
+.mood-date {
+    font-size: 0.9rem;
+    color: var(--journal-text-light);
+    min-width: 100px;
+    font-weight: 500;
+}
+
+.mood-thoughts {
+    font-size: 0.9rem;
+    color: var(--journal-text);
+    font-style: italic;
+    flex: 1;
+    line-height: 1.4;
+}
+
+.feedback-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.feedback-item {
+    background: var(--journal-bg);
+    border-radius: 8px;
+    padding: 1rem;
+    border-left: 4px solid var(--primary-dark);
+    box-shadow: var(--journal-shadow);
+    transition: all 0.2s ease;
+}
+
+.feedback-item:hover {
+    box-shadow: var(--journal-shadow-deep);
+    transform: translateX(2px);
+}
+
+.feedback-text {
+    font-size: 0.95rem;
+    color: var(--journal-text);
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.feedback-date {
+    font-size: 0.8rem;
+    color: var(--journal-text-light);
+    font-weight: 500;
+}
+
+.account-info {
+    background: var(--journal-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    border: 1px solid var(--journal-border);
+    box-shadow: var(--journal-shadow);
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--journal-border);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--journal-text);
+    font-size: 0.95rem;
+}
+
+.info-value {
+    color: var(--journal-text-light);
+    font-size: 0.9rem;
+    font-family: 'JetBrains Mono', monospace;
+    word-break: break-all;
+    font-weight: 500;
+}
+
+.loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--journal-text-light);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.error {
+    text-align: center;
+    padding: 2rem;
+    color: #dc3545;
+    font-size: 1rem;
+    background: #f8d7da;
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
+    margin: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .profile-container {
+        padding: 1rem 1.5vw 0.5rem 1.5vw;
+        margin: 8px auto;
+    }
+
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem 1.5rem;
+    }
+
+    .profile-avatar,
+    .profile-avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        font-size: 28px;
+    }
+
+    .profile-info h2 {
+        font-size: 1.5rem;
+    }
+
+    .profile-sections {
+        padding: 1.5rem 1.5rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .mood-overview {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+    }
+
+    .mood-metrics {
+        justify-content: center;
+    }
+
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .info-value {
+        word-break: break-word;
+    }
+
+    .mood-entry {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .mood-date {
+        min-width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-container {
+        padding: 0.5rem 1vw;
+        margin: 4px auto;
+    }
+
+    .profile-header {
+        padding: 1rem 1rem;
+    }
+
+    .profile-sections {
+        padding: 1rem 1rem;
+    }
+
+    .mood-stats {
+        padding: 1rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .account-info {
+        padding: 1rem;
+    }
+
+    .profile-section h3 {
+        font-size: 1.2rem;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+    }
+
+    .mood-emoji {
+        font-size: 2.5rem;
+    }
+
+    .mood-score {
+        font-size: 1.3rem;
+    }
+}
