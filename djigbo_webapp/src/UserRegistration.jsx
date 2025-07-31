@@ -9,10 +9,28 @@ const UserRegistration = ({ onRegistrationComplete }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Function to validate URL format
+    const isValidUrl = (string) => {
+        try {
+            new URL(string);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
+
+        // Validate avatar URL if provided
+        const trimmedAvatar = avatar.trim();
+        if (trimmedAvatar && !isValidUrl(trimmedAvatar)) {
+            setError('Please enter a valid URL for the avatar');
+            setIsLoading(false);
+            return;
+        }
 
         try {
             const token = await getAccessTokenSilently();
@@ -25,7 +43,7 @@ const UserRegistration = ({ onRegistrationComplete }) => {
                 },
                 body: JSON.stringify({
                     nickname: nickname.trim(),
-                    avatar: avatar.trim() || null
+                    avatar: trimmedAvatar || null
                 })
             });
 
@@ -72,7 +90,7 @@ const UserRegistration = ({ onRegistrationComplete }) => {
                     <div className="form-group">
                         <label htmlFor="avatar">Avatar URL (optional)</label>
                         <input
-                            type="url"
+                            type="text"
                             id="avatar"
                             value={avatar}
                             onChange={(e) => setAvatar(e.target.value)}
