@@ -54,6 +54,30 @@ function initializeDatabase() {
     )
   `;
 
+    const createMoodTableSQL = `
+    CREATE TABLE IF NOT EXISTS mood_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      mood_score INTEGER NOT NULL CHECK (mood_score >= 1 AND mood_score <= 5),
+      thoughts TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+    const createMoodStatsTableSQL = `
+    CREATE TABLE IF NOT EXISTS mood_stats (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      avg_mood REAL NOT NULL,
+      participant_count INTEGER NOT NULL,
+      common_thoughts TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(date)
+    )
+  `;
+
     return new Promise((resolve, reject) => {
         // Create conversation summaries table
         db.run(createConversationTableSQL, (err) => {
@@ -78,7 +102,27 @@ function initializeDatabase() {
                                 reject(err);
                             } else {
                                 logger.info('Users table ready');
-                                resolve();
+
+                                // Create mood entries table
+                                db.run(createMoodTableSQL, (err) => {
+                                    if (err) {
+                                        logger.error('Error creating mood entries table:', err.message);
+                                        reject(err);
+                                    } else {
+                                        logger.info('Mood entries table ready');
+
+                                        // Create mood stats table
+                                        db.run(createMoodStatsTableSQL, (err) => {
+                                            if (err) {
+                                                logger.error('Error creating mood stats table:', err.message);
+                                                reject(err);
+                                            } else {
+                                                logger.info('Mood stats table ready');
+                                                resolve();
+                                            }
+                                        });
+                                    }
+                                });
                             }
                         });
                     }
@@ -524,6 +568,253 @@ function closeDatabase() {
     });
 }
 
+// Utility function to validate base64 image data
+function validateBase64Image(base64Data) {
+    if (!base64Data || typeof base64Data !== 'string') {
+        return { valid: false, error: 'Invalid data format' };
+    }
+
+    if (!base64Data.startsWith('data:image/')) {
+        return { valid: false, error: 'Not a valid image data URL' };
+    }
+
+    // Check file size (base64 is ~33% larger than binary)
+    const base64String = base64Data.split(',')[1];
+    if (!base64String) {
+        return { valid: false, error: 'Invalid base64 data' };
+    }
+
+    const sizeInBytes = Math.ceil((base64String.length * 3) / 4);
+    const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+
+    if (sizeInBytes > maxSizeInBytes) {
+        return { valid: false, error: 'File size exceeds 5MB limit' };
+    }
+
+    return { valid: true, size: sizeInBytes };
+}
+
+// Save mood entry
+function saveMoodEntry(userId, moodScore, thoughts = null) {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      INSERT INTO mood_entries (user_id, mood_score, thoughts, created_at, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `;
+
+        db.run(sql, [userId, moodScore, thoughts], function (err) {
+            if (err) {
+                logger.error('Error saving mood entry:', err.message);
+                reject(err);
+            } else {
+                logger.info(`Saved mood entry for user ${userId} with score ${moodScore}`);
+                resolve(this.lastID);
+            }
+        });
+    });
+}
+
+// Get user's mood entries
+function getUserMoodEntries(userId, limit = 30) {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      SELECT * FROM mood_entries 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC 
+      LIMIT ?
+    `;
+
+        db.all(sql, [userId, limit], (err, rows) => {
+            if (err) {
+                logger.error('Error getting user mood entries:', err.message);
+                reject(err);
+            } else {
+                resolve(rows);
+            }
+        });
+    });
+}
+
+// Get user's mood statistics
+function getUserMoodStats(userId) {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      SELECT 
+        COUNT(*) as total_entries,
+        AVG(mood_score) as avg_mood,
+        MIN(mood_score) as min_mood,
+        MAX(mood_score) as max_mood,
+        COUNT(DISTINCT DATE(created_at)) as days_with_entries
+      FROM mood_entries 
+      WHERE user_id = ?
+    `;
+
+        db.get(sql, [userId], (err, row) => {
+            if (err) {
+                logger.error('Error getting user mood stats:', err.message);
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
+// Get camp-wide mood data for a specific date range
+function getCampMoodData(startDate = null, endDate = null) {
+    return new Promise((resolve, reject) => {
+        let sql = `
+      SELECT 
+        DATE(created_at) as date,
+        AVG(mood_score) as avg_mood,
+        COUNT(DISTINCT user_id) as participant_count,
+        GROUP_CONCAT(DISTINCT thoughts) as thoughts
+      FROM mood_entries 
+    `;
+
+        const params = [];
+        if (startDate && endDate) {
+            sql += ` WHERE DATE(created_at) BETWEEN ? AND ?`;
+            params.push(startDate, endDate);
+        }
+
+        sql += ` GROUP BY DATE(created_at) ORDER BY date DESC LIMIT 14`;
+
+        db.all(sql, params, (err, rows) => {
+            if (err) {
+                logger.error('Error getting camp mood data:', err.message);
+                reject(err);
+            } else {
+                resolve(rows);
+            }
+        });
+    });
+}
+
+// Get today's camp mood summary
+function getTodayCampMood() {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      SELECT 
+        AVG(mood_score) as avg_mood,
+        COUNT(DISTINCT user_id) as participant_count
+      FROM mood_entries 
+      WHERE DATE(created_at) = DATE('now')
+    `;
+
+        db.get(sql, [], (err, row) => {
+            if (err) {
+                logger.error('Error getting today\'s camp mood:', err.message);
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
+// Get overall camp mood statistics
+function getOverallCampMoodStats() {
+    return new Promise((resolve, reject) => {
+        const sql = `
+      SELECT 
+        COUNT(DISTINCT user_id) as total_participants,
+        AVG(mood_score) as overall_avg_mood,
+        COUNT(*) as total_entries,
+        COUNT(DISTINCT DATE(created_at)) as total_days
+      FROM mood_entries
+    `;
+
+        db.get(sql, [], (err, row) => {
+            if (err) {
+                logger.error('Error getting overall camp mood stats:', err.message);
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
+// Get all participants' mood entries with user information
+function getAllParticipantsMoodEntries(startDate = null, endDate = null) {
+    return new Promise((resolve, reject) => {
+        let sql = `
+      SELECT 
+        me.id,
+        me.user_id,
+        me.mood_score,
+        me.thoughts,
+        me.created_at,
+        u.nickname,
+        u.avatar
+      FROM mood_entries me
+      LEFT JOIN users u ON me.user_id = u.auth0_user_id
+    `;
+
+        const params = [];
+        if (startDate && endDate) {
+            sql += ` WHERE DATE(me.created_at) BETWEEN ? AND ?`;
+            params.push(startDate, endDate);
+        }
+
+        sql += ` ORDER BY me.created_at DESC, u.nickname`;
+
+        db.all(sql, params, (err, rows) => {
+            if (err) {
+                logger.error('Error getting all participants mood entries:', err.message);
+                reject(err);
+            } else {
+                resolve(rows);
+            }
+        });
+    });
+}
+
+// Get participants' mood entries grouped by date
+function getParticipantsMoodByDate(startDate = null, endDate = null) {
+    return new Promise((resolve, reject) => {
+        let sql = `
+      SELECT 
+        DATE(me.created_at) as date,
+        me.user_id,
+        me.mood_score,
+        me.thoughts,
+        me.created_at,
+        u.nickname,
+        u.avatar
+      FROM mood_entries me
+      LEFT JOIN users u ON me.user_id = u.auth0_user_id
+    `;
+
+        const params = [];
+        if (startDate && endDate) {
+            sql += ` WHERE DATE(me.created_at) BETWEEN ? AND ?`;
+            params.push(startDate, endDate);
+        }
+
+        sql += ` ORDER BY me.created_at DESC, u.nickname`;
+
+        db.all(sql, params, (err, rows) => {
+            if (err) {
+                logger.error('Error getting participants mood by date:', err.message);
+                reject(err);
+            } else {
+                // Group by date
+                const groupedData = {};
+                rows.forEach(row => {
+                    const date = row.date;
+                    if (!groupedData[date]) {
+                        groupedData[date] = [];
+                    }
+                    groupedData[date].push(row);
+                });
+                resolve(groupedData);
+            }
+        });
+    });
+}
+
 module.exports = {
     db,
     initializeDatabase,
@@ -547,5 +838,14 @@ module.exports = {
     getUserByAuth0Id,
     createUser,
     updateUser,
+    validateBase64Image,
+    saveMoodEntry,
+    getUserMoodEntries,
+    getUserMoodStats,
+    getCampMoodData,
+    getTodayCampMood,
+    getOverallCampMoodStats,
+    getAllParticipantsMoodEntries,
+    getParticipantsMoodByDate,
     closeDatabase
 }; 

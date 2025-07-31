@@ -20,7 +20,16 @@ const {
   getFeedbackStats,
   getUserByAuth0Id,
   createUser,
-  updateUser
+  updateUser,
+  validateBase64Image,
+  saveMoodEntry,
+  getUserMoodEntries,
+  getUserMoodStats,
+  getCampMoodData,
+  getTodayCampMood,
+  getOverallCampMoodStats,
+  getAllParticipantsMoodEntries,
+  getParticipantsMoodByDate
 } = require('./database');
 
 // At the top of server.js
@@ -523,6 +532,17 @@ app.post('/api/user/register', debugToken, checkJwt, extractUserInfo, asyncHandl
       });
     }
 
+    // Validate avatar data if provided
+    if (avatar && typeof avatar === 'string') {
+      const validation = validateBase64Image(avatar);
+      if (!validation.valid) {
+        return res.status(400).json({
+          error: validation.error,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
     // Check if user already exists
     const existingUser = await getUserByAuth0Id(userId);
     if (existingUser) {
@@ -552,6 +572,65 @@ app.post('/api/user/register', debugToken, checkJwt, extractUserInfo, asyncHandl
   }
 }));
 
+// Get user avatar endpoint
+app.get('/api/user/avatar/:userId', asyncHandler(async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        error: 'User ID is required',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const user = await getUserByAuth0Id(userId);
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (!user.avatar) {
+      return res.status(404).json({
+        error: 'User has no avatar',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Check if it's a base64 data URL
+    if (user.avatar.startsWith('data:image/')) {
+      // Extract content type and base64 data
+      const matches = user.avatar.match(/^data:([^;]+);base64,(.+)$/);
+      if (matches) {
+        const contentType = matches[1];
+        const base64Data = matches[2];
+
+        // Set appropriate headers
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+
+        // Send the base64 data as buffer
+        const buffer = Buffer.from(base64Data, 'base64');
+        res.send(buffer);
+        return;
+      }
+    }
+
+    // If it's a URL, redirect to it
+    res.redirect(user.avatar);
+  } catch (error) {
+    logger.error('Error in GET /api/user/avatar/:userId endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.params.userId,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
 // Update user endpoint
 app.put('/api/user/update', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
   try {
@@ -563,6 +642,17 @@ app.put('/api/user/update', debugToken, checkJwt, extractUserInfo, asyncHandler(
         error: 'nickname is required and must be a non-empty string',
         timestamp: new Date().toISOString()
       });
+    }
+
+    // Validate avatar data if provided
+    if (avatar && typeof avatar === 'string') {
+      const validation = validateBase64Image(avatar);
+      if (!validation.valid) {
+        return res.status(400).json({
+          error: validation.error,
+          timestamp: new Date().toISOString()
+        });
+      }
     }
 
     // Check if user exists
@@ -588,6 +678,114 @@ app.put('/api/user/update', debugToken, checkJwt, extractUserInfo, asyncHandler(
       stack: error.stack,
       userId: req.user?.sub,
       body: req.body,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Save mood entry endpoint
+app.post('/api/mood', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const { moodScore, thoughts } = req.body;
+
+    if (!moodScore || typeof moodScore !== 'number' || moodScore < 1 || moodScore > 5) {
+      return res.status(400).json({
+        error: 'moodScore is required and must be a number between 1 and 5',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Save mood entry
+    const moodId = await saveMoodEntry(userId, moodScore, thoughts || null);
+
+    res.json({
+      message: 'Mood entry saved successfully',
+      moodId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in POST /api/mood endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      body: req.body,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get user's mood entries endpoint
+app.get('/api/mood/personal', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const limit = parseInt(req.query.limit) || 30;
+
+    const moodEntries = await getUserMoodEntries(userId, limit);
+    const moodStats = await getUserMoodStats(userId);
+
+    res.json({
+      entries: moodEntries,
+      stats: moodStats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/mood/personal endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get camp-wide mood data endpoint
+app.get('/api/mood/camp', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    const campMoodData = await getCampMoodData(startDate || null, endDate || null);
+    const todayMood = await getTodayCampMood();
+    const overallStats = await getOverallCampMoodStats();
+
+    res.json({
+      campData: campMoodData,
+      today: todayMood,
+      overall: overallStats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/mood/camp endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Get participants feedback endpoint
+app.get('/api/mood/participants', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    const participantsData = await getParticipantsMoodByDate(startDate || null, endDate || null);
+    const allParticipants = await getAllParticipantsMoodEntries(startDate || null, endDate || null);
+
+    res.json({
+      participantsByDate: participantsData,
+      allParticipants: allParticipants,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/mood/participants endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
       timestamp: new Date().toISOString()
     });
     throw error;
