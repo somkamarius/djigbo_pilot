@@ -10,6 +10,7 @@ import ClimateNavigationButton from './ClimateNavigationButton';
 import LogoutButton from './LogoutButton';
 import AdminPanel from './AdminPanel';
 import { Climate } from './climate';
+import UserRegistration from './UserRegistration';
 // import FeedbackWidget from './FeedbackWidget';
 
 function Storyteller() {
@@ -22,9 +23,11 @@ function Democracy() {
 
 function App() {
   // const location = useLocation();
-  const { isAuthenticated, isLoading, error } = useAuth0();
+  const { isAuthenticated, isLoading, error, getAccessTokenSilently } = useAuth0();
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [userExists, setUserExists] = useState(null);
+  const [checkingUser, setCheckingUser] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -47,6 +50,41 @@ function App() {
     };
   }, []);
 
+  // Check if user exists in our database when authenticated
+  useEffect(() => {
+    const checkUserExists = async () => {
+      if (!isAuthenticated) {
+        setUserExists(null);
+        return;
+      }
+
+      setCheckingUser(true);
+      try {
+        const token = await getAccessTokenSilently();
+        const response = await fetch('/api/user/check', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserExists(data.exists);
+        } else {
+          console.error('Failed to check user existence');
+          setUserExists(false);
+        }
+      } catch (error) {
+        console.error('Error checking user existence:', error);
+        setUserExists(false);
+      } finally {
+        setCheckingUser(false);
+      }
+    };
+
+    checkUserExists();
+  }, [isAuthenticated, getAccessTokenSilently]);
+
   const handleConversationSelect = (conversationId) => {
     setSelectedConversationId(conversationId);
     // Show a notification that conversation was selected
@@ -55,12 +93,21 @@ function App() {
     alert(`Conversation ${conversationId} selected. Note: Full conversation messages are not stored for privacy reasons.`);
   };
 
-  if (isLoading) {
+  const handleRegistrationComplete = () => {
+    setUserExists(true);
+  };
+
+  if (isLoading || checkingUser) {
     return <Loading />;
   }
 
   if (error) {
     return <div>Oops... {error.message}</div>;
+  }
+
+  // Show registration screen if user is authenticated but doesn't exist in our database
+  if (isAuthenticated && userExists === false) {
+    return <UserRegistration onRegistrationComplete={handleRegistrationComplete} />;
   }
 
   console.log(isAuthenticated);
@@ -88,6 +135,9 @@ function App() {
               isAuthenticated ? <IndividualConnection /> : <Navigate to="/maintenance" replace />
             } />
             <Route path="/maintenance" element={<Maintenance />} />
+            <Route path="/register" element={
+              isAuthenticated ? <UserRegistration onRegistrationComplete={handleRegistrationComplete} /> : <Navigate to="/maintenance" replace />
+            } />
             <Route path="/storyteller" element={
               isAuthenticated ? <Storyteller /> : <Navigate to="/maintenance" replace />
             } />
