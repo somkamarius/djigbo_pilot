@@ -11,6 +11,7 @@ import LogoutButton from './LogoutButton';
 import AdminPanel from './AdminPanel';
 import { Climate } from './climate';
 import UserRegistration from './UserRegistration';
+import Profile from './Profile';
 // import FeedbackWidget from './FeedbackWidget';
 
 function Storyteller() {
@@ -145,6 +146,9 @@ function App() {
               isAuthenticated ? <Democracy /> : <Navigate to="/maintenance" replace />
             } />
             <Route path="/climate" element={<Climate />} />
+            <Route path="/profile" element={
+              isAuthenticated ? <Profile /> : <Navigate to="/maintenance" replace />
+            } />
           </Routes>
         </div>
       </div>

@@ -1,0 +1,36 @@
+.avatar {
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e1e5e9;
+    background-color: #f5f5f5;
+    transition: border-color 0.3s ease;
+}
+
+.avatar:hover {
+    border-color: var(--primary-dark, #a68a64);
+}
+
+.avatar.small {
+    width: 32px !important;
+    height: 32px !important;
+}
+
+.avatar.medium {
+    width: 48px !important;
+    height: 48px !important;
+}
+
+.avatar.large {
+    width: 64px !important;
+    height: 64px !important;
+}
+
+.avatar.xlarge {
+    width: 96px !important;
+    height: 96px !important;
+}
+
+.avatar.with-border {
+    border: 3px solid var(--primary, rgb(223, 207, 185));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}

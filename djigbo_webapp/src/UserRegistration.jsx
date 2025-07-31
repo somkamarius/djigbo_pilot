@@ -1,22 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { validateAvatarFile, fileToBase64 } from './utils/avatarUtils';
 import './UserRegistration.css';
 
 const UserRegistration = ({ onRegistrationComplete }) => {
     const { user } = useAuth0();
     const [nickname, setNickname] = useState('');
-    const [avatar, setAvatar] = useState('');
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [isDragOver, setIsDragOver] = useState(false);
+    const fileInputRef = useRef(null);
 
-    // Function to validate URL format
-    const isValidUrl = (string) => {
-        try {
-            new URL(string);
-            return true;
-        } catch {
-            return false;
+    // Function to handle file selection
+    const handleFileSelect = (file) => {
+        const validation = validateAvatarFile(file);
+        if (!validation.valid) {
+            setError(validation.error);
+            return;
         }
+
+        setAvatarFile(file);
+        fileToBase64(file).then(base64Data => {
+            setAvatarPreview(base64Data);
+            setError('');
+        }).catch(err => {
+            setError('Klaida apdorojant failą');
+            console.error('File processing error:', err);
+        });
+    };
+
+    // Function to handle drag and drop
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragOver(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+    };
+
+    // Function to handle gallery selection
+    const handleGallerySelect = () => {
+        fileInputRef.current?.click();
     };
 
     const handleSubmit = async (e) => {
@@ -24,16 +61,19 @@ const UserRegistration = ({ onRegistrationComplete }) => {
         setIsLoading(true);
         setError('');
 
-        // Validate avatar URL if provided
-        const trimmedAvatar = avatar.trim();
-        if (trimmedAvatar && !isValidUrl(trimmedAvatar)) {
-            setError('Please enter a valid URL for the avatar');
-            setIsLoading(false);
-            return;
-        }
-
         try {
             const token = await getAccessTokenSilently();
+
+            // Prepare avatar data
+            let avatarData = null;
+            if (avatarFile) {
+                // Convert file to base64 for upload
+                const reader = new FileReader();
+                avatarData = await new Promise((resolve) => {
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(avatarFile);
+                });
+            }
 
             const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/register`, {
                 method: 'POST',
@@ -43,13 +83,13 @@ const UserRegistration = ({ onRegistrationComplete }) => {
                 },
                 body: JSON.stringify({
                     nickname: nickname.trim(),
-                    avatar: trimmedAvatar || null
+                    avatar: avatarData
                 })
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Registration failed');
+                throw new Error(errorData.error || 'Registracija nepavyko');
             }
 
             const result = await response.json();
@@ -59,7 +99,7 @@ const UserRegistration = ({ onRegistrationComplete }) => {
             onRegistrationComplete();
         } catch (err) {
             console.error('Registration error:', err);
-            setError(err.message || 'Registration failed. Please try again.');
+            setError(err.message || 'Registracija nepavyko. Bandykite dar kartą.');
         } finally {
             setIsLoading(false);
         }
@@ -70,34 +110,72 @@ const UserRegistration = ({ onRegistrationComplete }) => {
     return (
         <div className="user-registration">
             <div className="registration-container">
-                <h1>Welcome to Džigbo!</h1>
-                <p>Please complete your profile to continue</p>
+                <h1>Sveiki atvykę į Džigbo!</h1>
+                <p>Prašome užpildyti savo profilį, kad galėtumėte tęsti</p>
 
                 <form onSubmit={handleSubmit} className="registration-form">
                     <div className="form-group">
-                        <label htmlFor="nickname">Nickname *</label>
+                        <label htmlFor="nickname">Vardas *</label>
                         <input
                             type="text"
                             id="nickname"
                             value={nickname}
                             onChange={(e) => setNickname(e.target.value)}
-                            placeholder="Enter your nickname"
+                            placeholder="Įveskite savo vardą"
                             required
                             disabled={isLoading}
                         />
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="avatar">Avatar URL (optional)</label>
+                        <label>Avataras (neprivaloma)</label>
+
+                        {/* Avatar Preview */}
+                        {avatarPreview && (
+                            <div className="avatar-preview">
+                                <img
+                                    src={avatarPreview}
+                                    alt="Avatar preview"
+                                    className="avatar-image"
+                                />
+                                <button
+                                    type="button"
+                                    className="remove-avatar"
+                                    onClick={() => {
+                                        setAvatarPreview('');
+                                        setAvatarFile(null);
+                                    }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Avatar Upload Options */}
+                        <div className="avatar-upload-options">
+                            {/* Drag and Drop Area */}
+                            <div
+                                className={`drag-drop-area ${isDragOver ? 'drag-over' : ''}`}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onClick={handleGallerySelect}
+                            >
+                                <div className="drag-drop-content">
+                                    <span>📁 Spustelėkite arba nuvilkite paveikslėlį čia</span>
+                                    <small>Palaikomi formatai: JPG, PNG (maks. 5MB)</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Hidden file input */}
                         <input
-                            type="text"
-                            id="avatar"
-                            value={avatar}
-                            onChange={(e) => setAvatar(e.target.value)}
-                            placeholder="https://example.com/avatar.jpg"
-                            disabled={isLoading}
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/jpg"
+                            onChange={(e) => handleFileSelect(e.target.files[0])}
+                            style={{ display: 'none' }}
                         />
-                        <small>Provide a URL to your profile picture</small>
                     </div>
 
                     {error && (
@@ -111,12 +189,12 @@ const UserRegistration = ({ onRegistrationComplete }) => {
                         className="submit-button"
                         disabled={isLoading || !nickname.trim()}
                     >
-                        {isLoading ? 'Creating Profile...' : 'Complete Registration'}
+                        {isLoading ? 'Kuriamas profilis...' : 'Užbaigti registraciją'}
                     </button>
                 </form>
 
                 <div className="user-info">
-                    <p>Logged in as: {user?.email}</p>
+                    <p>Prisijungta paštu: {user?.email}</p>
                 </div>
             </div>
         </div>
