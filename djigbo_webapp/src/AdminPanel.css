@@ -35,6 +35,12 @@
     border: 1px solid var(--journal-border);
 }
 
+.admin-panel.database-view {
+    width: 90vw;
+    max-width: 1200px;
+    max-height: 80vh;
+}
+
 @keyframes slideIn {
     from {
         transform: scale(0.95) translateY(-10px);
@@ -254,6 +260,12 @@
         max-height: 70vh;
     }
 
+    .admin-panel.database-view {
+        width: 95vw;
+        max-width: none;
+        max-height: 85vh;
+    }
+
     .admin-main-view {
         padding: 16px 12px;
     }
@@ -301,5 +313,136 @@
 
     .admin-buttons-container {
         gap: 4px;
+    }
+}
+
+/* Database Tables Styles */
+.database-tables-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #5a6fd8;
+}
+
+.database-tables-btn:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4198 100%);
+    transform: translateY(-1px);
+}
+
+.admin-table-container {
+    margin-bottom: 30px;
+    background: var(--journal-paper);
+    border-radius: 8px;
+    border: 1px solid var(--journal-border);
+    overflow: hidden;
+}
+
+.admin-table-title {
+    background: var(--glass-bg);
+    color: var(--journal-text);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--journal-border);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.admin-table-info {
+    padding: 8px 16px;
+    background: var(--journal-bg);
+    border-bottom: 1px solid var(--journal-border);
+    font-size: 0.75rem;
+    color: var(--journal-text-light);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.admin-table-wrapper {
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.admin-table th {
+    background: var(--glass-bg);
+    color: var(--journal-text);
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--journal-border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.admin-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--journal-border-light);
+    color: var(--journal-text);
+    word-break: break-word;
+    max-width: 200px;
+}
+
+.admin-table tr:nth-child(even) {
+    background: var(--journal-bg);
+}
+
+.admin-table tr:hover {
+    background: var(--glass-bg);
+}
+
+.admin-table-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--journal-text-light);
+    font-style: italic;
+    margin: 0;
+}
+
+.admin-loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--journal-text-light);
+    font-style: italic;
+}
+
+.admin-error {
+    background: #fee;
+    color: #c33;
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    border: 1px solid #fcc;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Responsive table styles */
+@media (max-width: 768px) {
+    .admin-table-container {
+        margin-bottom: 20px;
+    }
+
+    .admin-table-title {
+        font-size: 0.9rem;
+        padding: 10px 12px;
+    }
+
+    .admin-table {
+        font-size: 0.7rem;
+    }
+
+    .admin-table th,
+    .admin-table td {
+        padding: 6px 8px;
+    }
+
+    .admin-table-wrapper {
+        max-height: 300px;
     }
 }
