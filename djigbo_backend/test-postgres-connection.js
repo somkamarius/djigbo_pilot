@@ -5,6 +5,24 @@ require('dotenv').config();
 async function testPostgreSQLConnection() {
     console.log('Testing PostgreSQL connection...\n');
 
+    const getSSLConfig = () => {
+        // If DATABASE_URL contains SSL parameters, use them
+        if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('sslmode=')) {
+            return undefined; // Let the connection string handle SSL
+        }
+
+        // For production environments, require SSL but allow self-signed certs
+        if (process.env.NODE_ENV === 'production') {
+            return {
+                rejectUnauthorized: false,
+                sslmode: 'require'
+            };
+        }
+
+        // For development, disable SSL
+        return false;
+    };
+
     const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         host: process.env.DB_HOST || 'localhost',
@@ -12,6 +30,7 @@ async function testPostgreSQLConnection() {
         database: process.env.DB_NAME || 'djigbo_db',
         user: process.env.DB_USER || 'username',
         password: process.env.DB_PASSWORD || 'password',
+        ssl: getSSLConfig(),
     });
 
     try {

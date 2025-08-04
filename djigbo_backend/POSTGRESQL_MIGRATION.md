@@ -13,6 +13,7 @@ The backend has been updated to use PostgreSQL instead of SQLite for better scal
 - Updated all database queries to use PostgreSQL syntax
 - Added connection pooling for better performance
 - Changed parameterized queries from `?` to `$1, $2, etc.`
+- Added SSL configuration for production environments
 
 ### 2. Schema Changes
 - Changed `INTEGER PRIMARY KEY AUTOINCREMENT` to `SERIAL PRIMARY KEY`
@@ -32,7 +33,32 @@ DB_PORT=5432
 DB_NAME=djigbo_db
 DB_USER=username
 DB_PASSWORD=password
+
+# For production with SSL (e.g., DigitalOcean Managed Database)
+DATABASE_URL=postgresql://username:password@host:port/djigbo_db?sslmode=require
+NODE_ENV=production
 ```
+
+## SSL Configuration
+
+### Production Environments
+For production environments (like DigitalOcean Managed Databases), SSL is automatically configured:
+
+```bash
+# The application will automatically use SSL in production
+NODE_ENV=production
+```
+
+### Custom SSL Configuration
+If your DATABASE_URL includes SSL parameters, they will be used automatically:
+
+```bash
+# Example with SSL mode in connection string
+DATABASE_URL=postgresql://user:pass@host:port/db?sslmode=require&sslcert=path/to/cert
+```
+
+### Development
+SSL is disabled by default in development environments.
 
 ## Setup Instructions
 
@@ -147,6 +173,26 @@ All existing API endpoints remain unchanged. The migration is transparent to the
 1. Verify PostgreSQL is running: `docker-compose ps` or `pg_isready`
 2. Check environment variables in `.env` file
 3. Ensure database exists: `psql -U username -d djigbo_db`
+
+### SSL Certificate Issues
+If you encounter SSL certificate errors in production:
+
+1. **For DigitalOcean Managed Databases:**
+   ```bash
+   # Set NODE_ENV to production
+   NODE_ENV=production
+   ```
+
+2. **For custom SSL certificates:**
+   ```bash
+   # Include SSL parameters in DATABASE_URL
+   DATABASE_URL=postgresql://user:pass@host:port/db?sslmode=require&sslcert=path/to/cert
+   ```
+
+3. **Test SSL connection:**
+   ```bash
+   npm run test:postgres
+   ```
 
 ### Migration Issues
 1. Ensure SQLite database file exists: `conversations.db`

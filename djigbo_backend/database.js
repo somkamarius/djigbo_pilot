@@ -5,6 +5,24 @@ const fetch = require('node-fetch');
 require('dotenv').config();
 
 // PostgreSQL connection configuration
+const getSSLConfig = () => {
+    // If DATABASE_URL contains SSL parameters, use them
+    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('sslmode=')) {
+        return undefined; // Let the connection string handle SSL
+    }
+
+    // For production environments, require SSL but allow self-signed certs
+    if (process.env.NODE_ENV === 'production') {
+        return {
+            rejectUnauthorized: false,
+            sslmode: 'require'
+        };
+    }
+
+    // For development, disable SSL
+    return false;
+};
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     host: process.env.DB_HOST || 'localhost',
@@ -15,6 +33,7 @@ const pool = new Pool({
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
     connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+    ssl: getSSLConfig(),
 });
 
 // Test database connection
