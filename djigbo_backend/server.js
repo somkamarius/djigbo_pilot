@@ -34,9 +34,8 @@ const {
 } = require('./database');
 
 // At the top of server.js
-const logger = require('./logger');
-
 const Sentry = require("@sentry/node");
+const { logger } = Sentry;
 require("./instrument.js");
 
 
@@ -94,7 +93,7 @@ process.on('uncaughtException', (error) => {
 
 const PORT = process.env.PORT || 8000;
 const server = app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
+  logger.info(logger.fmt`Server running on port ${PORT}`);
 });
 
 // Health check endpoint for DigitalOcean App Platform
@@ -134,7 +133,7 @@ app.post('/api/chat', debugToken, checkJwt, extractUserInfo, asyncHandler(async 
   try {
     await bedrockChatHandler(req, res);
   } catch (error) {
-    logger.error('Error in /api/chat endpoint:', {
+    logger.error('Error in /api/chat endpoint', {
       error: error.message,
       stack: error.stack,
       body: req.body,
@@ -156,7 +155,7 @@ app.get('/status', asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Error in /status endpoint:', {
+    logger.error('Error in /status endpoint', {
       error: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString()
@@ -173,7 +172,7 @@ app.get('/api/profile', debugToken, checkJwt, extractUserInfo, asyncHandler(asyn
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    logger.error('Error in /api/profile endpoint:', {
+    logger.error('Error in /api/profile endpoint', {
       error: error.message,
       stack: error.stack,
       userId: req.user?.sub,
@@ -188,7 +187,7 @@ app.post('/api/ollama-chat', debugToken, checkJwt, extractUserInfo, asyncHandler
   try {
     await ollamaChatHandler(req, res);
   } catch (error) {
-    logger.error('Error in /api/ollama-chat endpoint:', {
+    logger.error('Error in /api/ollama-chat endpoint', {
       error: error.message,
       stack: error.stack,
       body: req.body,
@@ -204,7 +203,7 @@ app.post('/api/together-chat', debugToken, checkJwt, extractUserInfo, asyncHandl
   try {
     await togetherChatHandler(req, res);
   } catch (error) {
-    logger.error('Error in /api/together-chat endpoint:', {
+    logger.error('Error in /api/together-chat endpoint', {
       error: error.message,
       stack: error.stack,
       body: req.body,
@@ -225,18 +224,17 @@ app.post('/api/chat-mock', debugToken, checkJwt, extractUserInfo, asyncHandler(a
       conversation_id: convId,
       messages: req.body.messages,
     })
-    logger.info(JSON.stringify({
-      content: "This is a mock response from the chat-mock endpoint. Hello from the mock server!",
+    logger.info(logger.fmt`Mock response sent`, {
       conversation_id: convId,
       messages: req.body.messages,
-    }));
-    Sentry.captureMessage('This is a mock response from the chat-mock endpoint. Hello from the mock server!');
+    });
+    // Sentry.captureMessage('This is a mock response from the chat-mock endpoint. Hello from the mock server!');
     res.json({
       content: "This is a mock response from the chat-mock endpoint. Hello from the mock server!",
       conversation_id: convId,
     });
   } catch (error) {
-    logger.error('Error in /api/chat-mock endpoint:', {
+    logger.error('Error in /api/chat-mock endpoint', {
       error: error.message,
       stack: error.stack,
       body: req.body,
@@ -258,7 +256,7 @@ app.get('/api/conversations', debugToken, checkJwt, extractUserInfo, asyncHandle
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    logger.error('Error in /api/conversations endpoint:', {
+    logger.error('Error in /api/conversations endpoint', {
       error: error.message,
       stack: error.stack,
       userId: req.user?.sub,
@@ -287,7 +285,7 @@ app.get('/api/conversations/:conversationId', debugToken, checkJwt, extractUserI
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    logger.error('Error in /api/conversations/:conversationId endpoint:', {
+    logger.error('Error in /api/conversations/:conversationId endpoint', {
       error: error.message,
       stack: error.stack,
       userId: req.user?.sub,
@@ -318,7 +316,7 @@ app.delete('/api/conversations/:conversationId', debugToken, checkJwt, extractUs
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    logger.error('Error in DELETE /api/conversations/:conversationId endpoint:', {
+    logger.error('Error in DELETE /api/conversations/:conversationId endpoint', {
       error: error.message,
       stack: error.stack,
       userId: req.user?.sub,
@@ -340,7 +338,7 @@ app.get('/api/conversations/count', debugToken, checkJwt, extractUserInfo, async
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    logger.error('Error in /api/conversations/count endpoint:', {
+    logger.error('Error in /api/conversations/count endpoint', {
       error: error.message,
       stack: error.stack,
       userId: req.user?.sub,
@@ -359,7 +357,7 @@ app.get('/api/conversations/stats', debugToken, checkJwt, extractUserInfo, async
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    logger.error('Error in /api/conversations/stats endpoint:', {
+    logger.error('Error in /api/conversations/stats endpoint', {
       error: error.message,
       stack: error.stack,
       userId: req.user?.sub,
