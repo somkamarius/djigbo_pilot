@@ -29,7 +29,8 @@ const {
   getTodayCampMood,
   getOverallCampMoodStats,
   getAllParticipantsMoodEntries,
-  getParticipantsMoodByDate
+  getParticipantsMoodByDate,
+  pool
 } = require('./database');
 
 // At the top of server.js
@@ -783,6 +784,102 @@ app.get('/api/mood/participants', debugToken, checkJwt, extractUserInfo, asyncHa
     });
   } catch (error) {
     logger.error('Error in GET /api/mood/participants endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+// Admin endpoints for database table exports
+app.get('/api/admin/conversation-summaries', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM conversation_summaries ORDER BY created_at DESC');
+    res.json({
+      data: result.rows,
+      count: result.rows.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/admin/conversation-summaries endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+app.get('/api/admin/feedback', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM feedback ORDER BY created_at DESC');
+    res.json({
+      data: result.rows,
+      count: result.rows.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/admin/feedback endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+app.get('/api/admin/users', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
+    res.json({
+      data: result.rows,
+      count: result.rows.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/admin/users endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+app.get('/api/admin/mood-entries', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM mood_entries ORDER BY created_at DESC');
+    res.json({
+      data: result.rows,
+      count: result.rows.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/admin/mood-entries endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.sub,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}));
+
+app.get('/api/admin/mood-stats', debugToken, checkJwt, extractUserInfo, asyncHandler(async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM mood_stats ORDER BY date DESC');
+    res.json({
+      data: result.rows,
+      count: result.rows.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in GET /api/admin/mood-stats endpoint:', {
       error: error.message,
       stack: error.stack,
       userId: req.user?.sub,
