@@ -38,23 +38,59 @@ const isDigitalOcean = process.env.DB_HOST && process.env.DB_HOST.includes('digi
 if (isDigitalOcean) {
     // Force SSL configuration for DigitalOcean
     process.env.PGSSLMODE = 'require';
+    // Also set Node.js to accept self-signed certificates
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'djigbo_db',
-    user: process.env.DB_USER || 'username',
-    password: process.env.DB_PASSWORD || 'password',
+// Create connection configuration
+let connectionConfig = {
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
     connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
-    ssl: isDigitalOcean ? {
+};
+
+// If using DATABASE_URL, modify it for DigitalOcean
+if (process.env.DATABASE_URL) {
+    let connectionString = process.env.DATABASE_URL;
+    if (isDigitalOcean) {
+        // Remove any existing SSL parameters and add our own
+        connectionString = connectionString.replace(/[?&]sslmode=[^&]*/g, '');
+        connectionString = connectionString.replace(/[?&]ssl=[^&]*/g, '');
+        const separator = connectionString.includes('?') ? '&' : '?';
+        connectionString += `${separator}sslmode=require&ssl=true`;
+    }
+    connectionConfig.connectionString = connectionString;
+} else {
+    // Use individual parameters
+    connectionConfig = {
+        ...connectionConfig,
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || 5432,
+        database: process.env.DB_NAME || 'djigbo_db',
+        user: process.env.DB_USER || 'username',
+        password: process.env.DB_PASSWORD || 'password',
+    };
+}
+
+// Add SSL configuration
+if (isDigitalOcean) {
+    connectionConfig.ssl = {
         rejectUnauthorized: false,
         sslmode: 'require'
-    } : getSSLConfig(),
+    };
+    logger.info('DigitalOcean SSL configuration applied:', connectionConfig.ssl);
+} else {
+    connectionConfig.ssl = getSSLConfig();
+}
+
+logger.info('Database connection configuration:', {
+    isDigitalOcean,
+    hasSSL: !!connectionConfig.ssl,
+    sslConfig: connectionConfig.ssl,
+    host: connectionConfig.host || 'from-connection-string'
 });
+
+const pool = new Pool(connectionConfig);
 
 // Test database connection
 pool.on('connect', () => {
