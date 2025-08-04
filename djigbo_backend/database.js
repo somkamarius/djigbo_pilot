@@ -11,6 +11,14 @@ const getSSLConfig = () => {
         return undefined; // Let the connection string handle SSL
     }
 
+    // For DigitalOcean and other cloud providers that require SSL with self-signed certs
+    if (process.env.DB_HOST && process.env.DB_HOST.includes('digitalocean.com')) {
+        return {
+            rejectUnauthorized: false,
+            sslmode: 'require'
+        };
+    }
+
     // For production environments, require SSL but allow self-signed certs
     if (process.env.NODE_ENV === 'production') {
         return {
@@ -33,7 +41,10 @@ const pool = new Pool({
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
     connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
-    ssl: getSSLConfig(),
+    ssl: process.env.DB_HOST && process.env.DB_HOST.includes('digitalocean.com') ? {
+        rejectUnauthorized: false,
+        sslmode: 'require'
+    } : getSSLConfig(),
 });
 
 // Test database connection
