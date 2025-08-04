@@ -36,6 +36,10 @@ const {
 // At the top of server.js
 const logger = require('./logger');
 
+const Sentry = require("@sentry/node");
+require("./instrument.js");
+
+
 // Async error wrapper function
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -226,6 +230,7 @@ app.post('/api/chat-mock', debugToken, checkJwt, extractUserInfo, asyncHandler(a
       conversation_id: convId,
       messages: req.body.messages,
     }));
+    Sentry.captureMessage('This is a mock response from the chat-mock endpoint. Hello from the mock server!');
     res.json({
       content: "This is a mock response from the chat-mock endpoint. Hello from the mock server!",
       conversation_id: convId,
