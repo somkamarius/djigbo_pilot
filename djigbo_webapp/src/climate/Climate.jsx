@@ -218,7 +218,7 @@ export const Climate = () => {
                                 <div className="summary-card">
                                     <h3>Šiandien</h3>
                                     <div className="summary-value">
-                                        <span className="mood-number">{todayMood.avgMood ? todayMood.avgMood.toFixed(1) : '0.0'}</span>
+                                        <span className="mood-number">{todayMood.avgMood ? Number(todayMood.avgMood).toFixed(1) : '0.0'}</span>
                                         <span className="mood-emoji">{getMoodEmoji(todayMood.avgMood || 0)}</span>
                                     </div>
                                     <p>{todayMood.participantCount || 0} dalyviai</p>
@@ -226,7 +226,7 @@ export const Climate = () => {
                                 <div className="summary-card">
                                     <h3>Vidutinė nuotaika</h3>
                                     <div className="summary-value">
-                                        <span className="mood-number">{overallStats.overall_avg_mood ? overallStats.overall_avg_mood.toFixed(1) : '0.0'}</span>
+                                        <span className="mood-number">{overallStats.overall_avg_mood ? Number(overallStats.overall_avg_mood).toFixed(1) : '0.0'}</span>
                                         <span className="mood-emoji">{getMoodEmoji(overallStats.overall_avg_mood || 0)}</span>
                                     </div>
                                     <p>Per visą stovyklą</p>
@@ -255,7 +255,7 @@ export const Climate = () => {
                                                 <div className="table-cell day-cell">{new Date(day.date).toLocaleDateString('lt-LT', { weekday: 'long' })}</div>
                                                 <div className="table-cell mood-cell">
                                                     <span className="mood-display">
-                                                        {day.avg_mood ? day.avg_mood.toFixed(1) : '0.0'} {getMoodEmoji(day.avg_mood || 0)}
+                                                        {day.avg_mood ? Number(day.avg_mood).toFixed(1) : '0.0'} {getMoodEmoji(day.avg_mood || 0)}
                                                     </span>
                                                 </div>
                                                 <div className="table-cell participants-cell">{day.participant_count || 0}</div>
@@ -348,7 +348,7 @@ export const Climate = () => {
                                 <div className="summary-card">
                                     <h3>Mano vidutinė nuotaika</h3>
                                     <div className="summary-value">
-                                        <span className="mood-number">{personalStats.avg_mood ? personalStats.avg_mood.toFixed(1) : '0.0'}</span>
+                                        <span className="mood-number">{personalStats.avg_mood ? Number(personalStats.avg_mood).toFixed(1) : '0.0'}</span>
                                         <span className="mood-emoji">{getMoodEmoji(personalStats.avg_mood || 0)}</span>
                                     </div>
                                     <p>Per visą stovyklą</p>
