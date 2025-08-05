@@ -9,10 +9,36 @@ const InlineFeedbackWidget = () => {
     const [submitStatus, setSubmitStatus] = useState(null);
     const { getAccessTokenSilently } = useAuth0();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    // Add event listener to catch page refresh attempts
+    React.useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            console.log('⚠️ Page refresh/navigation detected!');
+            console.log('⚠️ Event type:', e.type);
+            if (isSubmitting) {
+                console.log('⚠️ Preventing refresh while submitting feedback');
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        };
 
-        console.log('🚀 handleSubmit started');
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [isSubmitting]);
+
+    const handleSubmit = async (e) => {
+        console.log('🚀 handleSubmit started - BEFORE preventDefault');
+        console.log('📋 Event object:', e);
+        console.log('📋 Event type:', e.type);
+        console.log('📋 Event target:', e.target);
+        console.log('📋 Event currentTarget:', e.currentTarget);
+
+        e.preventDefault();
+        console.log('✅ preventDefault called');
+
         console.log('📝 Feedback text:', feedbackText);
         console.log('📝 Feedback text length:', feedbackText.length);
         console.log('📝 Feedback text trimmed:', feedbackText.trim());
@@ -197,6 +223,14 @@ const InlineFeedbackWidget = () => {
                                     type="submit"
                                     className="feedback-submit-btn"
                                     disabled={isSubmitting || !feedbackText.trim()}
+                                    onClick={(e) => {
+                                        console.log('🔘 Submit button clicked');
+                                        console.log('🔘 Button disabled:', isSubmitting || !feedbackText.trim());
+                                        if (isSubmitting || !feedbackText.trim()) {
+                                            e.preventDefault();
+                                            console.log('🔘 Preventing submission - button disabled or empty text');
+                                        }
+                                    }}
                                 >
                                     {isSubmitting ? 'Siunčiama...' : 'Pateikti'}
                                 </button>
