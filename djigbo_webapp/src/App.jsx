@@ -26,7 +26,6 @@ function App() {
   // const location = useLocation();
   const { isAuthenticated, isLoading, error, getAccessTokenSilently } = useAuth0();
   const [selectedConversationId, setSelectedConversationId] = useState(null);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [userExists, setUserExists] = useState(null);
   const [checkingUser, setCheckingUser] = useState(false);
 
@@ -36,12 +35,8 @@ function App() {
       // Check for Option+Shift+D (Mac) or Alt+Shift+D (Windows/Linux)
       if ((event.altKey) && event.shiftKey && event.key === 'Î') {
         event.preventDefault();
-        setShowAdminPanel(prev => !prev);
-      }
-
-      // Close admin panel with Escape key
-      if (event.key === 'Escape') {
-        setShowAdminPanel(false);
+        // Open admin panel in new tab
+        window.open('/admin', '_blank');
       }
     };
 
@@ -149,16 +144,13 @@ function App() {
             <Route path="/profile" element={
               isAuthenticated ? <Profile /> : <Navigate to="/maintenance" replace />
             } />
+            <Route path="/admin" element={
+              isAuthenticated ? <AdminPanel /> : <Navigate to="/maintenance" replace />
+            } />
           </Routes>
         </div>
       </div>
       {/* <FeedbackWidget /> */}
-
-      {showAdminPanel && (
-        <div className="admin-modal-overlay">
-          <AdminPanel onClose={() => setShowAdminPanel(false)} />
-        </div>
-      )}
     </div>
   )
 }

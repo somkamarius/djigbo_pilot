@@ -1,135 +1,74 @@
-.admin-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: transparent;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    z-index: 9999;
-    padding-top: 20px;
-    animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
-
+/* Full page admin panel styles */
 .admin-panel {
-    width: 400px;
-    max-height: 60vh;
+    width: 100%;
+    min-height: 100vh;
     background: var(--journal-bg);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: var(--journal-shadow-deep);
     font-family: 'JetBrains Mono', monospace;
-    animation: slideIn 0.3s ease-out;
-    border: 1px solid var(--journal-border);
+    display: flex;
+    flex-direction: column;
 }
 
 .admin-panel.database-view {
-    width: 90vw;
-    max-width: 1200px;
-    max-height: 80vh;
-}
-
-@keyframes slideIn {
-    from {
-        transform: scale(0.95) translateY(-10px);
-        opacity: 0;
-    }
-
-    to {
-        transform: scale(1) translateY(0);
-        opacity: 1;
-    }
+    width: 100%;
+    min-height: 100vh;
 }
 
 .admin-main-view {
-    padding: 20px 16px;
+    padding: 40px 20px;
     text-align: center;
-    max-height: 60vh;
-    overflow-y: auto;
     background: var(--journal-paper);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .admin-header-main {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-    text-align: left;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 40px;
+    text-align: center;
+    flex-direction: column;
 }
 
 .admin-title-section {
-    flex: 1;
+    text-align: center;
 }
 
 .admin-title {
     color: var(--journal-text);
-    font-size: 1.2rem;
+    font-size: 2rem;
     font-weight: 600;
-    margin: 0 0 2px 0;
+    margin: 0 0 8px 0;
     font-family: 'JetBrains Mono', monospace;
     letter-spacing: -0.02em;
 }
 
 .admin-subtitle {
     color: var(--journal-text-light);
-    font-size: 0.75rem;
+    font-size: 1rem;
     font-weight: 400;
     font-family: 'JetBrains Mono', monospace;
     margin: 0;
 }
 
-.close-button {
-    background: var(--glass-bg);
-    border: 1px solid var(--journal-border);
-    color: var(--journal-text);
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.7rem;
-    font-weight: 500;
-    font-family: 'JetBrains Mono', monospace;
-    transition: all 0.2s ease;
-    backdrop-filter: var(--glass-blur);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--journal-shadow);
-}
-
-.close-button:hover {
-    background: var(--primary);
-    border-color: var(--primary-dark);
-    transform: scale(1.05);
-}
-
 .admin-buttons-container {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    max-width: 300px;
+    gap: 12px;
+    max-width: 400px;
     margin: 0 auto;
 }
 
 .admin-button {
-    padding: 4px 8px;
-    font-size: 0.7rem;
+    padding: 12px 16px;
+    font-size: 0.9rem;
     font-weight: 500;
     font-family: 'JetBrains Mono', monospace;
     border: 1px solid var(--journal-border);
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: var(--journal-shadow);
@@ -139,7 +78,7 @@
     background: var(--journal-bg);
     text-transform: none;
     letter-spacing: 0.01em;
-    min-height: 24px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -148,7 +87,7 @@
 .admin-button:hover {
     background: var(--primary);
     border-color: var(--primary-dark);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     box-shadow: var(--journal-shadow-deep);
 }
 
@@ -190,26 +129,25 @@
 /* Content views */
 .admin-content-view {
     background: var(--journal-paper);
-    border-radius: 8px;
-    overflow: hidden;
-    max-height: 60vh;
+    flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 100vh;
 }
 
 .admin-header {
     background: var(--journal-bg);
-    padding: 12px 16px;
+    padding: 20px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     color: var(--journal-text);
     border-bottom: 1px solid var(--journal-border);
 }
 
 .admin-header h2 {
     margin: 0;
-    font-size: 1rem;
+    font-size: 1.5rem;
     font-weight: 600;
     font-family: 'JetBrains Mono', monospace;
     color: var(--journal-text);
@@ -219,10 +157,10 @@
     background: var(--glass-bg);
     border: 1px solid var(--journal-border);
     color: var(--journal-text);
-    padding: 3px 8px;
-    border-radius: 4px;
+    padding: 8px 16px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 0.65rem;
+    font-size: 0.8rem;
     font-weight: 500;
     font-family: 'JetBrains Mono', monospace;
     transition: all 0.2s ease;
@@ -237,7 +175,7 @@
 }
 
 .admin-content {
-    padding: 16px;
+    padding: 20px;
     color: var(--journal-text);
     flex: 1;
     overflow-y: auto;
@@ -245,75 +183,11 @@
 }
 
 .admin-content p {
-    font-size: 0.75rem;
-    line-height: 1.4;
+    font-size: 0.9rem;
+    line-height: 1.5;
     color: var(--journal-text-light);
     margin: 0;
     font-family: 'JetBrains Mono', monospace;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-    .admin-panel {
-        width: 90vw;
-        max-width: 350px;
-        max-height: 70vh;
-    }
-
-    .admin-panel.database-view {
-        width: 95vw;
-        max-width: none;
-        max-height: 85vh;
-    }
-
-    .admin-main-view {
-        padding: 16px 12px;
-    }
-
-    .admin-title {
-        font-size: 1rem;
-    }
-
-    .admin-button {
-        padding: 3px 6px;
-        font-size: 0.65rem;
-        min-height: 20px;
-    }
-
-    .admin-content-view {
-        max-height: 70vh;
-    }
-
-    .admin-header {
-        padding: 10px 12px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-
-    .admin-header h2 {
-        font-size: 0.9rem;
-    }
-
-    .admin-content {
-        padding: 12px;
-    }
-}
-
-@media (max-width: 480px) {
-    .admin-title {
-        font-size: 0.9rem;
-    }
-
-    .admin-button {
-        padding: 2px 4px;
-        font-size: 0.6rem;
-        min-height: 18px;
-    }
-
-    .admin-buttons-container {
-        gap: 4px;
-    }
 }
 
 /* Database Tables Styles */
@@ -324,11 +198,11 @@
 
 .database-tables-btn:hover {
     background: linear-gradient(135deg, #5a6fd8 0%, #6a4198 100%);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
 .admin-table-container {
-    margin-bottom: 30px;
+    margin-bottom: 40px;
     background: var(--journal-paper);
     border-radius: 8px;
     border: 1px solid var(--journal-border);
@@ -338,33 +212,33 @@
 .admin-table-title {
     background: var(--glass-bg);
     color: var(--journal-text);
-    font-size: 1rem;
+    font-size: 1.2rem;
     font-weight: 600;
     margin: 0;
-    padding: 12px 16px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--journal-border);
     font-family: 'JetBrains Mono', monospace;
 }
 
 .admin-table-info {
-    padding: 8px 16px;
+    padding: 12px 20px;
     background: var(--journal-bg);
     border-bottom: 1px solid var(--journal-border);
-    font-size: 0.75rem;
+    font-size: 0.9rem;
     color: var(--journal-text-light);
     font-family: 'JetBrains Mono', monospace;
 }
 
 .admin-table-wrapper {
     overflow-x: auto;
-    max-height: 400px;
+    max-height: 600px;
     overflow-y: auto;
 }
 
 .admin-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-family: 'JetBrains Mono', monospace;
 }
 
@@ -373,7 +247,7 @@
     color: var(--journal-text);
     font-weight: 600;
     text-align: left;
-    padding: 8px 12px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--journal-border);
     position: sticky;
     top: 0;
@@ -381,11 +255,11 @@
 }
 
 .admin-table td {
-    padding: 8px 12px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--journal-border-light);
     color: var(--journal-text);
     word-break: break-word;
-    max-width: 200px;
+    max-width: 300px;
 }
 
 .admin-table tr:nth-child(even) {
@@ -397,7 +271,7 @@
 }
 
 .admin-table-empty {
-    padding: 20px;
+    padding: 40px;
     text-align: center;
     color: var(--journal-text-light);
     font-style: italic;
@@ -406,7 +280,7 @@
 
 .admin-loading {
     text-align: center;
-    padding: 20px;
+    padding: 40px;
     color: var(--journal-text-light);
     font-style: italic;
 }
@@ -414,35 +288,90 @@
 .admin-error {
     background: #fee;
     color: #c33;
-    padding: 12px 16px;
-    border-radius: 4px;
-    margin-bottom: 16px;
+    padding: 16px 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
     border: 1px solid #fcc;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-family: 'JetBrains Mono', monospace;
 }
 
-/* Responsive table styles */
+/* Responsive design */
 @media (max-width: 768px) {
+    .admin-main-view {
+        padding: 20px 16px;
+    }
+
+    .admin-title {
+        font-size: 1.5rem;
+    }
+
+    .admin-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .admin-button {
+        padding: 10px 14px;
+        font-size: 0.8rem;
+        min-height: 36px;
+    }
+
+    .admin-header {
+        padding: 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .admin-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .admin-content {
+        padding: 16px;
+    }
+
     .admin-table-container {
-        margin-bottom: 20px;
+        margin-bottom: 30px;
     }
 
     .admin-table-title {
-        font-size: 0.9rem;
-        padding: 10px 12px;
+        font-size: 1rem;
+        padding: 12px 16px;
     }
 
     .admin-table {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
+    }
+
+    .admin-table th,
+    .admin-table td {
+        padding: 8px 12px;
+    }
+
+    .admin-table-wrapper {
+        max-height: 400px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-title {
+        font-size: 1.3rem;
+    }
+
+    .admin-button {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        min-height: 32px;
+    }
+
+    .admin-buttons-container {
+        gap: 8px;
     }
 
     .admin-table th,
     .admin-table td {
         padding: 6px 8px;
-    }
-
-    .admin-table-wrapper {
-        max-height: 300px;
+        font-size: 0.7rem;
     }
 }

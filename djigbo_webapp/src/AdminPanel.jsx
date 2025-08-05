@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import './AdminPanel.css';
 
-const AdminPanel = ({ onClose }) => {
+const AdminPanel = () => {
     const [activeView, setActiveView] = useState('main');
     const [tableData, setTableData] = useState({});
     const [loading, setLoading] = useState(false);
@@ -68,11 +68,7 @@ const AdminPanel = ({ onClose }) => {
         setError(null);
     };
 
-    const handleClose = () => {
-        if (onClose) {
-            onClose();
-        }
-    };
+
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -126,9 +122,6 @@ const AdminPanel = ({ onClose }) => {
                     <h1 className="admin-title">Administravimas</h1>
                     <div className="admin-subtitle">Sistemos valdymas ir stebėjimas</div>
                 </div>
-                <button className="close-button" onClick={handleClose}>
-                    ✕
-                </button>
             </div>
             <div className="admin-buttons-container">
                 <button
