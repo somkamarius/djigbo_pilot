@@ -181,7 +181,7 @@ const InlineFeedbackWidget = () => {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="feedback-form">
+                        <form className="feedback-form">
                             <div className="feedback-input-group">
                                 <label htmlFor="feedback-text" className="feedback-label">
                                     Jūsų atsiliepimas:
@@ -220,14 +220,16 @@ const InlineFeedbackWidget = () => {
                                     Atšaukti
                                 </button>
                                 <button
-                                    type="submit"
+                                    type="button"
                                     className="feedback-submit-btn"
                                     disabled={isSubmitting || !feedbackText.trim()}
                                     onClick={(e) => {
                                         console.log('🔘 Submit button clicked');
                                         console.log('🔘 Button disabled:', isSubmitting || !feedbackText.trim());
-                                        if (isSubmitting || !feedbackText.trim()) {
-                                            e.preventDefault();
+                                        if (!isSubmitting && feedbackText.trim()) {
+                                            console.log('🔘 Calling handleSubmit manually');
+                                            handleSubmit(e);
+                                        } else {
                                             console.log('🔘 Preventing submission - button disabled or empty text');
                                         }
                                     }}
