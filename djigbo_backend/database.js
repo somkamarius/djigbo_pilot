@@ -833,7 +833,8 @@ async function getParticipantsMoodByDate(startDate = null, endDate = null) {
         me.user_id,
         u.nickname,
         me.mood_score,
-        me.thoughts
+        me.thoughts,
+        me.id
       FROM mood_entries me
       LEFT JOIN users u ON me.user_id = u.auth0_user_id
     `;
@@ -850,7 +851,24 @@ async function getParticipantsMoodByDate(startDate = null, endDate = null) {
         sql += ` ORDER BY date DESC, me.created_at DESC`;
 
         const result = await pool.query(sql, params);
-        return result.rows;
+
+        // Group the results by date
+        const groupedByDate = {};
+        result.rows.forEach(row => {
+            const date = row.date;
+            if (!groupedByDate[date]) {
+                groupedByDate[date] = [];
+            }
+            groupedByDate[date].push({
+                id: row.id,
+                user_id: row.user_id,
+                nickname: row.nickname,
+                mood_score: row.mood_score,
+                thoughts: row.thoughts
+            });
+        });
+
+        return groupedByDate;
     } catch (error) {
         logger.error('Error getting participants mood by date:', error);
         throw error;
