@@ -46,10 +46,14 @@ export const ParticipantFeedback = () => {
 
         Object.entries(participantsData).forEach(([date, participants]) => {
             const dayName = new Date(date).toLocaleDateString('lt-LT', { weekday: 'long' });
+
+            // Ensure participants is an array before mapping
+            const participantsArray = Array.isArray(participants) ? participants : [];
+
             transformedData.push({
                 day: dayName,
                 date: date,
-                participants: participants.map(p => ({
+                participants: participantsArray.map(p => ({
                     id: p.id,
                     name: p.nickname || 'Anonimas',
                     mood: p.mood_score,
