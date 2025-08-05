@@ -12,42 +12,108 @@ const InlineFeedbackWidget = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!feedbackText.trim()) {
-            return;
-        }
+        console.log('🚀 handleSubmit started');
+        console.log('📝 Feedback text:', feedbackText);
+        console.log('📝 Feedback text length:', feedbackText.length);
+        console.log('📝 Feedback text trimmed:', feedbackText.trim());
+        console.log('📝 Is feedback text empty?', !feedbackText.trim());
 
         setIsSubmitting(true);
         setSubmitStatus(null);
 
+        console.log('🔄 Set isSubmitting to true, cleared submitStatus');
+
         try {
+            console.log('🔑 Getting access token...');
+            // Get authentication token
             const token = await getAccessTokenSilently();
+            console.log('✅ Got access token:', token ? 'Token received' : 'No token');
+            console.log('🔑 Token length:', token ? token.length : 0);
+
+            const requestBody = {
+                feedbackText: feedbackText.trim()
+            };
+            console.log('📦 Request body:', requestBody);
+            console.log('🌐 API URL:', `${import.meta.env.VITE_API_BASE_URL}/api/feedback`);
+
+            console.log('📤 Making fetch request...');
             const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/feedback`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    feedbackText: feedbackText.trim()
-                })
+                body: JSON.stringify(requestBody)
             });
 
+            console.log('📥 Response received');
+            console.log('📊 Response status:', response.status);
+            console.log('📊 Response statusText:', response.statusText);
+            console.log('📊 Response ok:', response.ok);
+            console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
+
             if (response.ok) {
+                console.log('✅ Response is ok, parsing response body...');
+                try {
+                    const result = await response.json();
+                    console.log('📄 Response body:', result);
+                } catch (parseError) {
+                    console.log('⚠️ Could not parse response as JSON:', parseError);
+                }
+
+                console.log('🎉 Setting success status');
                 setSubmitStatus('success');
                 setFeedbackText('');
+                console.log('⏰ Setting timeout to close modal in 2 seconds');
                 setTimeout(() => {
+                    console.log('🔒 Closing modal and clearing status');
                     setIsModalOpen(false);
                     setSubmitStatus(null);
                 }, 2000);
             } else {
+                console.log('❌ Response is not ok, handling error...');
+                // Try to get error details from response
+                let errorMessage = 'Įvyko klaida siunčiant atsiliepimą';
+                try {
+                    console.log('🔍 Attempting to parse error response...');
+                    const errorData = await response.json();
+                    console.log('📄 Error response body:', errorData);
+                    if (errorData.error) {
+                        errorMessage = errorData.error;
+                        console.log('🚨 Error message from server:', errorMessage);
+                    }
+                } catch (parseError) {
+                    // If we can't parse the error response, use default message
+                    console.warn('⚠️ Could not parse error response:', parseError);
+                }
+
+                console.error('❌ Feedback submission failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    error: errorMessage
+                });
+                console.log('🚨 Setting error status');
                 setSubmitStatus('error');
             }
         } catch (error) {
-            console.error('Error submitting feedback:', error);
+            console.error('💥 Caught exception in handleSubmit:', error);
+            console.log('🔍 Error type:', error.constructor.name);
+            console.log('🔍 Error message:', error.message);
+            console.log('🔍 Error stack:', error.stack);
+
+            // Handle specific authentication errors
+            if (error.error === 'login_required' || error.error === 'consent_required') {
+                console.error('🔐 Authentication error:', error.error_description);
+            }
+
+            console.log('🚨 Setting error status due to exception');
             setSubmitStatus('error');
         } finally {
+            console.log('🏁 Finally block - setting isSubmitting to false');
             setIsSubmitting(false);
         }
+
+        console.log('✅ handleSubmit completed');
     };
 
     const handleCloseModal = () => {
