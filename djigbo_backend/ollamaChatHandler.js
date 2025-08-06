@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
-const logger = require('./logger');
+const Sentry = require("@sentry/node");
+const { logger } = Sentry;
 const { saveConversationSummary, generateConversationId, generateConversationSummaryV2 } = require('./database');
 
 // Handler for local Ollama chat
@@ -7,7 +8,7 @@ async function ollamaChatHandler(req, res) {
   try {
     const { messages, max_tokens, conversation_id } = req.body;
     if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: 'messages array is required' });
+      throw new Error('messages array is required');
     }
 
     // Generate conversation ID if not provided
@@ -40,7 +41,13 @@ async function ollamaChatHandler(req, res) {
     });
     if (!response.ok) {
       const errorText = await response.text();
-      return res.status(500).json({ error: errorText });
+      logger.error('Ollama API error:', {
+        error: errorText,
+        status: response.status,
+        statusText: response.statusText,
+        model: process.env.OLLAMA_MODEL || 'llama3'
+      });
+      throw new Error(`Ollama API error: ${errorText}`);
     }
     const data = await response.json();
 
@@ -67,7 +74,7 @@ async function ollamaChatHandler(req, res) {
 
   } catch (err) {
     logger.error('Error in ollamaChatHandler:', err);
-    res.status(500).json({ error: err.message });
+    throw err; // Re-throw to be caught by global error handlers
   }
 }
 

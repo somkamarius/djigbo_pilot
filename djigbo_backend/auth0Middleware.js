@@ -1,5 +1,6 @@
 const { auth } = require('express-oauth2-jwt-bearer');
-const logger = require('./logger');
+const Sentry = require("@sentry/node");
+const { logger } = Sentry;
 
 // Auth0 configuration
 const auth0Config = {

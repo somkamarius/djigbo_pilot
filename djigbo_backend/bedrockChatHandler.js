@@ -1,7 +1,8 @@
 require('dotenv').config();
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
 const { saveConversationSummary, generateConversationId, generateConversationSummaryV2 } = require('./database');
-const logger = require('./logger');
+const Sentry = require("@sentry/node");
+const { logger } = Sentry;
 
 const client = new BedrockRuntimeClient({
   region: process.env.AWS_REGION,
@@ -17,7 +18,7 @@ async function bedrockChatHandler(req, res) {
   try {
     const { messages, max_tokens, conversation_id } = req.body;
     if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: 'messages array is required' });
+      throw new Error('messages array is required');
     }
 
     // Generate conversation ID if not provided
@@ -70,7 +71,7 @@ async function bedrockChatHandler(req, res) {
     });
   } catch (err) {
     logger.error('Error in bedrockChatHandler:', err);
-    res.status(500).json({ error: err.message });
+    throw err; // Re-throw to be caught by global error handlers
   }
 }
 

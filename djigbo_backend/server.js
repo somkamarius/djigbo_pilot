@@ -60,12 +60,34 @@ app.use((err, req, res, next) => {
     method: req.method,
     ip: req.ip,
     userAgent: req.get('User-Agent'),
+    userId: req.user?.sub,
+    body: req.body,
     timestamp: new Date().toISOString()
   });
 
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
+  // Determine appropriate status code based on error type
+  let statusCode = 500;
+  let errorMessage = process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message;
+
+  // Handle validation errors
+  if (err.message.includes('messages array is required')) {
+    statusCode = 400;
+    errorMessage = 'messages array is required';
+  }
+  // Handle API key errors
+  else if (err.message.includes('Invalid API key') || err.message.includes('invalid_api_key')) {
+    statusCode = 401;
+    errorMessage = 'Invalid API key provided';
+  }
+  // Handle other API errors
+  else if (err.message.includes('API error')) {
+    statusCode = 502; // Bad Gateway for external API errors
+    errorMessage = err.message;
+  }
+
+  res.status(statusCode).json({
+    error: statusCode === 500 ? 'Internal Server Error' : 'Request Error',
+    message: errorMessage
   });
 });
 
@@ -138,6 +160,7 @@ app.post('/api/chat', debugToken, checkJwt, extractUserInfo, asyncHandler(async 
       stack: error.stack,
       body: req.body,
       userId: req.user?.sub,
+      apiProvider: 'bedrock',
       timestamp: new Date().toISOString()
     });
     throw error; // Re-throw to be caught by error middleware
@@ -192,6 +215,7 @@ app.post('/api/ollama-chat', debugToken, checkJwt, extractUserInfo, asyncHandler
       stack: error.stack,
       body: req.body,
       userId: req.user?.sub,
+      apiProvider: 'ollama',
       timestamp: new Date().toISOString()
     });
     throw error;
@@ -208,6 +232,7 @@ app.post('/api/together-chat', debugToken, checkJwt, extractUserInfo, asyncHandl
       stack: error.stack,
       body: req.body,
       userId: req.user?.sub,
+      apiProvider: 'together.ai',
       timestamp: new Date().toISOString()
     });
     throw error;

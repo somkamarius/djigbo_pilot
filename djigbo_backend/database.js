@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
-const logger = require('./logger');
+const Sentry = require("@sentry/node");
+const { logger } = Sentry;
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
 const fetch = require('node-fetch');
 require('dotenv').config();

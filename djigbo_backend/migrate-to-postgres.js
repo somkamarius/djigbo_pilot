@@ -1,7 +1,8 @@
 const sqlite3 = require('sqlite3').verbose();
 const { Pool } = require('pg');
 const path = require('path');
-const logger = require('./logger');
+const Sentry = require("@sentry/node");
+const { logger } = Sentry;
 require('dotenv').config();
 
 // SQLite database connection

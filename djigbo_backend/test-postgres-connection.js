@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
-const logger = require('./logger');
+const Sentry = require("@sentry/node");
+const { logger } = Sentry;
 require('dotenv').config();
 
 async function testPostgreSQLConnection() {

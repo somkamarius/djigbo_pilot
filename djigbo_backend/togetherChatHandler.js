@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
-const logger = require('./logger');
+const Sentry = require("@sentry/node");
+const { logger } = Sentry;
 const { saveConversationSummary, generateConversationId, generateConversationSummaryV2 } = require('./database');
 
 // Handler for Together.ai chat
@@ -7,7 +8,7 @@ async function togetherChatHandler(req, res) {
     try {
         const { messages, max_tokens, conversation_id } = req.body;
         if (!messages || !Array.isArray(messages)) {
-            return res.status(400).json({ error: 'messages array is required' });
+            throw new Error('messages array is required');
         }
 
         // Generate conversation ID if not provided
@@ -39,8 +40,14 @@ async function togetherChatHandler(req, res) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            logger.error('Together.ai API error:', errorText);
-            return res.status(500).json({ error: `Together.ai API error: ${errorText}` });
+            logger.error('Together.ai API error:', {
+                error: errorText,
+                status: response.status,
+                statusText: response.statusText,
+                hasApiKey: !!process.env.TOGETHER_API_KEY,
+                apiKeyLength: process.env.TOGETHER_API_KEY ? process.env.TOGETHER_API_KEY.length : 0
+            });
+            throw new Error(`Together.ai API error: ${errorText}`);
         }
 
         const data = await response.json();
@@ -68,7 +75,7 @@ async function togetherChatHandler(req, res) {
 
     } catch (err) {
         logger.error('Error in togetherChatHandler:', err);
-        res.status(500).json({ error: err.message });
+        throw err; // Re-throw to be caught by global error handlers
     }
 }
 
