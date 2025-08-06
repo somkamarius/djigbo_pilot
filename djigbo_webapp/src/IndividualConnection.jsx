@@ -4,10 +4,16 @@ import ReactMarkdown from 'react-markdown';
 import InlineFeedbackWidget from './InlineFeedbackWidget';
 import './App.css';
 
-// const API_URL = "http://localhost:4000/api/chat";
-// const API_URL = "http://localhost:3002/api/chat-mock";
-const API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/chat-mock`;
-// const API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/ollama-chat`;
+// Make the chat endpoint configurable via environment variable
+// 0 = mock endpoint, 1 = together-chat endpoint
+const USE_REAL_CHAT = import.meta.env.VITE_USE_REAL_CHAT === '1';
+const CHAT_ENDPOINT = USE_REAL_CHAT ? 'together-chat' : 'chat-mock';
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/${CHAT_ENDPOINT}`;
+
+// Log which endpoint is being used for debugging
+console.log('🤖 Use real chat:', USE_REAL_CHAT);
+console.log('🌐 Chat endpoint:', CHAT_ENDPOINT);
+console.log('🔗 Full API URL:', API_URL);
 
 export default function IndividualConnection() {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
