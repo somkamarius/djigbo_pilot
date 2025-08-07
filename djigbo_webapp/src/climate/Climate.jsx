@@ -311,11 +311,11 @@ export const Climate = () => {
                                 <div className="feature-disabled-message">
                                     <div className="message-content">
                                         <h3>📊 Nuotaikos Vizualizacija</h3>
-                                        <p>Ši funkcija šiuo metu išjungta. Administratorius gali ją įjungti per aplinkos kintamuosius.</p>
-                                        <div className="message-details">
+                                        <p>Ši funkcija šiuo metu išjungta.</p>
+                                        {/* <div className="message-details">
                                             <p><strong>Funkcija:</strong> 3D/2D nuotaikos grafikas</p>
                                             <p><strong>Kintamasis:</strong> VITE_ENABLE_CLIMATE_GRAPH</p>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </div>
                             )}
