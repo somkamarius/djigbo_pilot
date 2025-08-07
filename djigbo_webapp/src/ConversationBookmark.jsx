@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { useLocation } from 'react-router-dom';
 import './ConversationBookmark.css';
 
 const ConversationBookmark = ({ onConversationSelect, selectedConversationId }) => {
     const { getAccessTokenSilently, isAuthenticated } = useAuth0();
+    const location = useLocation();
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -82,7 +84,8 @@ const ConversationBookmark = ({ onConversationSelect, selectedConversationId }) 
         setIsExpanded(!isExpanded);
     };
 
-    if (!isAuthenticated) {
+    // Hide the bookmark when on profile page or not authenticated
+    if (!isAuthenticated || location.pathname === '/profile') {
         return null;
     }
 

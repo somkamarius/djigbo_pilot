@@ -94,6 +94,15 @@
     text-align: center;
 }
 
+/* Profile page specific button positioning */
+.profile-klimatas-button {
+    top: 120px !important;
+}
+
+.profile-chat-button {
+    top: 220px !important;
+}
+
 /* Responsive design */
 @media (max-width: 900px) {
     .climate-navigation-button {
@@ -194,5 +203,60 @@
 
     .climate-button-indicator {
         display: none;
+    }
+}
+
+/* Responsive design for profile buttons */
+@media (max-width: 900px) {
+    .profile-klimatas-button {
+        top: 10px !important;
+        left: calc(50% - 50px) !important;
+        transform: translateX(0) !important;
+    }
+
+    .profile-chat-button {
+        top: 70px !important;
+        left: calc(50% - 50px) !important;
+        transform: translateX(0) !important;
+    }
+
+    .profile-klimatas-button:hover {
+        transform: translateY(-2px) !important;
+    }
+
+    .profile-chat-button:hover {
+        transform: translateY(-2px) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-klimatas-button {
+        top: 8px !important;
+        left: calc(50% - 45px) !important;
+        width: 70px !important;
+        height: 45px !important;
+    }
+
+    .profile-chat-button {
+        top: 63px !important;
+        left: calc(50% - 45px) !important;
+        width: 70px !important;
+        height: 45px !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .profile-klimatas-button {
+        top: 6px !important;
+        left: calc(50% - 40px) !important;
+        width: 60px !important;
+        height: 40px !important;
+    }
+
+    .profile-chat-button {
+        top: 56px !important;
+        left: calc(50% - 40px) !important;
+        width: 60px !important;
+        height: 40px !important;
     }
 }
